@@ -1,7 +1,5 @@
 'use client'
 
-// app/form/page.js
-
 import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
 

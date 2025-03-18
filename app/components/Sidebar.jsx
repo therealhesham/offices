@@ -19,6 +19,8 @@ const menuItems = [
   { id: 2, label: "Booked Workers", icon: ArticleIcon, link: "/bookedhomemaid" },
   { id: 3, label: "Available Workers", icon: UsersIcon, link: "/availablelist" },
   { id: 4, label: "Full List", icon: VideosIcon, link: "/workerlist" },
+  { id: 5, label: "Settings", icon: UsersIcon, link: "/settings" },
+
 ];
 
 const Sidebar = () => {

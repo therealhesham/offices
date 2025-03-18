@@ -21,7 +21,12 @@ export default function Table() {
   const isFetchingRef = useRef(false); // Prevent duplicate fetches
 
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for debouncing timeout
-  const storage =      localStorage.getItem("_item")
+    
+  var storage:string;
+  const ISSERVER = typeof window === "undefined";
+  if (!ISSERVER) {  
+    var storage:string =localStorage.getItem("_item")
+}
 
   // Fetch data function with pagination
   const fetchData = useCallback(async () => {

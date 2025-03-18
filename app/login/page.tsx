@@ -33,11 +33,17 @@ setError('');
 router.push("/home")
     // alert('Logging in...');
   };
-
+  
+  var lang:string;
+  const ISSERVER = typeof window === "undefined";
+  if (!ISSERVER) {  
+    var lang=  localStorage.getItem("language")
+  }
+ 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-        <h2 className="text-2xl font-bold text-center mb-6">تسجيل دخول</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">{lang=="fra"?"se connecter":lang=="ur"?"سائن ان کریں":"LOG IN"}</h2> 
         
         {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
 
