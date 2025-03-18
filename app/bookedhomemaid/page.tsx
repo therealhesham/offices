@@ -160,7 +160,7 @@ export default function Table() {
         <h1
           className={`text-center font-medium text-2xl mb-4 `}
         >
-          قائمة العاملات
+         العاملات المحجوزة
         </h1>
 
         {/* Filter Section */}
