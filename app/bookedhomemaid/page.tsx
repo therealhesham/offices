@@ -1,98 +1,21 @@
 'use client'
-
+// import { BookFilled } from "@ant-design/icons";
+// import Layout from "example/containers/Layout";
+import { useRouter } from "next/navigation";
+import translate from "translate";
+import { useEffect, useState, useCallback, useRef } from "react";
 import jwt from "jsonwebtoken";
-import { useEffect, useState, useCallback, useRef, useContext } from "react";
 import Sidebar from "../components/Sidebar";
-
+// import { Button } from "@mui/material";
+// import Style from "styles/Home.module.css";
 
 export default function Table() {
   const [filters, setFilters] = useState({
-    phonenumber: "",
-    fullname: "",
+    Name: "",
+    age: "",
+    Passportnumber: "",
+    id: "",
   });
-
-  const [state, setState] = useState({
-    data: [],
-    loading: false,
-    hasMore: true,
-  });
-
-  const pageRef = useRef(1); // Keep track of current page
-  const isFetchingRef = useRef(false); // Prevent duplicate fetches
-
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for debouncing timeout
-    
-  var storage:string;
-  const ISSERVER = typeof window === "undefined";
-  if (!ISSERVER) {  
-    var storage:string =localStorage.getItem("_item")
-}
-
-  // Fetch data function with pagination
-  const fetchData = useCallback(async () => {
-    if (isFetchingRef.current || !state.hasMore) return;
-
-    isFetchingRef.current = true;
-    setState((prevState) => ({ ...prevState, loading: true }));
-
-    try {
-      const queryParams = new URLSearchParams({
-        fullname: filters.fullname,
-        phonenumber: filters.phonenumber,
-
-        page: String(pageRef.current),
-      });
-
-      const response = await fetch(`/api/bookedhomemaid?${queryParams}`, {
-        method: "GET",
-        headers: {
-          authorization:`bearer ${storage}`,
-
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      const res = await response.json();
-
-      if (res && res.length > 0) {
-        setState((prevState) => ({
-          ...prevState,
-          data: [...prevState.data, ...res],
-        }));
-        pageRef.current += 1;
-      } else {
-        setState((prevState) => ({ ...prevState, hasMore: false }));
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setState((prevState) => ({ ...prevState, loading: false }));
-      isFetchingRef.current = false;
-    }
-  }, [filters, state.hasMore]);
-
-  useEffect(() => {
-    fetchData(); // Fetch initial data on mount
-  }, [fetchData]);
-
-  const handleFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    column: string
-  ) => {
-    const value = e.target.value;
-
-    // Clear any previous debounce timeout if it's still running
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    // Set the new filter value
-    setFilters((prev) => ({
-      ...prev,
-      [column]: value,
-    }));
-  };
 
   function getDate(date) {
     const currentDate = new Date(date); // Original date
@@ -101,34 +24,143 @@ export default function Table() {
     console.log(currentDate);
     return form;
   }
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false); // Loading state
+  const [hasMore, setHasMore] = useState(true); // To check if there is more data to load
 
+  const pageRef = useRef(1); // Use a ref to keep track of the current page number
+  const isFetchingRef = useRef(false); // Ref to track whether data is being fetched
+  var storage;
+  var lang;
+    const ISSERVER = typeof window === "undefined";
+    if (!ISSERVER) {  
+      var storage =localStorage.getItem("_item")
+    var lang=  localStorage.getItem("language")
+  
+  }
+  // Fetch data with pagination
+  const fetchData = async () => {
+    if (isFetchingRef.current || !hasMore) return; // Prevent duplicate fetches if already loading
+    isFetchingRef.current = true;
+    setLoading(true);
 
+    try {
+      // Build the query string for filters
+      const queryParams = new URLSearchParams({
+        Name: filters.Name,
+        age: filters.age,
+        id: filters.id,
+        Passportnumber: filters.Passportnumber,
+        // Nationalitycopy: filters.Nationality,
+        page: String(pageRef.current),
+      });
+
+      const response = await fetch(`/api/bookedhomemaid?${queryParams}`, {
+        headers: {
+          authorization:`bearer ${storage}`,
+
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        method: "get",
+      });
+
+      const res = await response.json();
+      if (res && res.length > 0) {
+        setData((prevData) => [...prevData, ...res]); // Append new data
+        pageRef.current += 1; // Increment page using ref
+      } else {
+        setHasMore(false); // No more data to load
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
+    }
+  };
+
+  const makeRequest = async (url: string, body: object) => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    return response.status === 200;
+  };
+
+  const restore = async (id: string, homeMaidId: string) => {
+    const success = await makeRequest("/api/restoreorders", {
+      id,
+      homeMaidId,
+    });
+    if (success) router.push("/admin/neworders");
+  };
+
+  // Use a callback to call fetchData when the user reaches the bottom
   const loadMoreRef = useCallback(
     (node: HTMLDivElement) => {
-      if (state.loading || !state.hasMore) return;
+      if (loading || !hasMore) return;
+
       const observer = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting) {
-            fetchData();
+            fetchData(); // Fetch next page of data
           }
         },
         { threshold: 1.0 }
       );
+
       if (node) observer.observe(node);
 
       return () => observer.disconnect();
     },
-    [fetchData, state.loading, state.hasMore]
+    [loading, hasMore]
   );
 
+  // useEffect to fetch the first page of data on mount
+  useEffect(() => {
+    fetchData(); // Fetch the first page of data
+  }, []); // Only run once on mount
+
+  // useEffect to fetch data when filters change
+  // useEffect(() => {
+  //   // Reset page and data on filter change
+  //   pageRef.current = 1;
+  //   setData([]);
+  //   setHasMore(true);
+  //   fetchData();
+  // }, [filters]); // Only re-run when filters change
+
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    column: string
+  ) => {
+    const value = e.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      [column]: value,
+    }));
+  };
+
+  const router = useRouter();
+  const handleUpdate = (id) => {
+    router.push("./neworder/" + id);
+  };
+
   return (
-    <div className="flex   h-screen flex-row">
-<Sidebar/>
-      <div className=" mx-auto p-6 w-full">
+    // <Layout>
+    <div className="flex flex-row ">
+      <Sidebar/>
+      <div className="container mx-auto p-6">
         <h1
-          className={`text-left font-medium text-2xl mb-4 `}
+          className={`text-center font-medium text-2xl mb-4 `}
         >
-          Booked Homemaids
+          قائمة العاملات
         </h1>
 
         {/* Filter Section */}
@@ -136,70 +168,67 @@ export default function Table() {
           <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.fullname}
-              onChange={(e) => handleFilterChange(e, "fullname")}
-              placeholder="بحث بالاسم"
+              value={filters.Name}
+              onChange={(e) => handleFilterChange(e, "Name")}
+              placeholder="بحث باسم العاملة"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
           <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.phonenumber}
-              onChange={(e) => handleFilterChange(e, "phonenumber")}
-              placeholder="بحث برقم الجوال"
+              value={filters.Passportnumber}
+              onChange={(e) => handleFilterChange(e, "Passportnumber")}
+              placeholder="بحث برقم الجواز"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          {/* <div className="flex-1 px-2">
-            <input
-              type="text"
-              value={filters.Nationality}
-              onChange={(e) => handleFilterChange(e, "email")}
-              placeholder="بحث برقم الجوال"
-              className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
-            />
-          </div> */}
 
-          {/* <div className="flex-1 px-2">
+          <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.HomemaidId}
-              onChange={(e) => handleFilterChange(e, "HomemaidId")}
-              placeholder="Filter by CV"
+              value={filters.id}
+              onChange={(e) => handleFilterChange(e, "id")}
+              placeholder="بحث برقم العاملة"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
-          </div> */}
+          </div>
           <div className="flex-1 px-1">
             <button
-              className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg focus:outline-none transition-all duration-200 ease-in-out"
+              className={
+                "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
+              }
               onClick={() => {
                 isFetchingRef.current = false;
-                setState({ data: [], hasMore: true, loading: false });
+                setHasMore(true);
                 setFilters({
-                  fullname: "",
-                  phonenumber: "",
+                  age: "",
+                  id: "",
+                  Passportnumber: "",
+                  Name: "",
                 });
+                setData([]);
                 pageRef.current = 1;
                 fetchData();
               }}
             >
-              اعادة ضبط
+              <h1>اعادة ضبط</h1>
             </button>
           </div>
           <div className="flex-1 px-1">
             <button
-              className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg focus:outline-none transition-all duration-200 ease-in-out"
-              // variant="contained"
-              // color="info"
+              className={
+                "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
+              }
               onClick={() => {
                 isFetchingRef.current = false;
-                setState({ data: [], hasMore: true, loading: false });
+                setHasMore(true);
+                setData([]);
                 pageRef.current = 1;
                 fetchData();
               }}
             >
-              بحث
+              <h1 >بحث</h1>
             </button>
           </div>
         </div>
@@ -207,23 +236,38 @@ export default function Table() {
         {/* Table */}
         <table className="min-w-full table-auto border-collapse bg-white shadow-md rounded-md">
           <thead>
-            <tr className="bg-blue-500 text-white">
-              <th className="p-3 text-center text-sm font-medium">م</th>
-              <th className="p-3 text-center text-sm font-medium">الاسم</th>
+            <tr className="bg-yellow-400 text-white">
               <th className="p-3 text-center text-sm font-medium">
-                جواز السفر
-              </th>
-              <th className="p-3 text-center text-sm font-medium">الجوال</th>
-              <th className="p-3 text-center text-sm font-medium">
-                تاريخ اضافة العاملة
+                رقم العاملة
               </th>
               <th className="p-3 text-center text-sm font-medium">
-                عدد الطلبات
+                اسم العاملة
               </th>
+              <th className="p-3 text-center text-sm font-medium">
+                جوال العاملة
+              </th>
+              <th className="p-3 text-center text-sm font-medium">الجنسية</th>
+              <th className="p-3 text-center text-sm font-medium">
+                رقم جواز السفر
+              </th>
+
+              <th className="p-3 text-center text-sm font-medium">
+                بداية الجواز
+              </th>
+              <th className="p-3 text-center text-sm font-medium">
+                نهاية الجواز
+              </th>
+
+              <th className="p-3 text-center text-sm font-medium">
+                الحالة الاجتماعية
+              </th>
+              <th className="p-3 text-center text-sm font-medium">المكتب</th>
+
+              <th className="p-3 text-center text-sm font-medium">استعراض</th>
             </tr>
           </thead>
           <tbody>
-            {state.data.length === 0 ? (
+            {data.length === 0 ? (
               <tr>
                 <td
                   colSpan="6"
@@ -233,29 +277,49 @@ export default function Table() {
                 </td>
               </tr>
             ) : (
-              state.data.map((item) => (
+              data.map((item) => (
                 <tr key={item.id} className="border-t">
-                  <td className="p-3 text-sm text-pretty text-gray-600">
+                  <td className="p-3 text-md  text-center text-gray-700">
                     {item.id}
                   </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
+                  <td className="p-3 text-md text-center text-gray-600">
                     {item.Name}
                   </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item.Passportnumber}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
+                  <td className="p-3 text-md text-center text-gray-700">
                     {item.phone}
                   </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item?.createdat ? getDate(item.createdat) : null}
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item.Nationalitycopy}
                   </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item.Passportnumber}
+                  </td>
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item?.PassportStart ? item?.PassportStart : null}
+                  </td>
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item?.PassportEnd ? item?.PassportEnd : null}
+                  </td>
+
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item.maritalstatus}
+                  </td>
+
+                  <td className="p-3 text-md text-gray-700 text-center">
+                    {item.officeName}
+                  </td>
+
+                  <td className="p-3 text-md text-gray-700 text-center">
                     <button
-                      color="warning"
-                      
+                      className={
+                        "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
+                      }
+                      onClick={() => {
+                        const url = "/admin/cvdetails/" + item.id;
+                        window.open(url, "_blank"); // Open in new window
+                      }}
                     >
-                      {/* {item._count.orders} */}
+                      <h1 >عرض</h1>
                     </button>
                   </td>
                 </tr>
@@ -265,9 +329,12 @@ export default function Table() {
         </table>
 
         {/* Infinite scroll trigger */}
-        {state.hasMore && (
-          <div ref={loadMoreRef} className="flex justify-center mt-6">
-            {state.loading && (
+        {hasMore && (
+          <div
+            ref={loadMoreRef} // Use IntersectionObserver to trigger load more
+            className="flex justify-center mt-6"
+          >
+            {loading && (
               <div className="flex justify-center items-center">
                 <svg
                   className="animate-spin h-5 w-5 mr-3 text-purple-600"
@@ -290,6 +357,7 @@ export default function Table() {
         )}
       </div>
       </div>
+
+    // </Layout>
   );
 }
-

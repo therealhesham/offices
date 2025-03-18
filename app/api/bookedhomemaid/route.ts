@@ -14,8 +14,6 @@ const header = await headers();
 
 const token = header.get("authorization")?.split(' ')[1];
 const verify = jwt.decode(token)
-// console.log(verify)
-// console.log(verify)
 if(!verify){
 
   throw new Error("not available token")
