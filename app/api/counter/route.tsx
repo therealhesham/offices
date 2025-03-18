@@ -16,11 +16,12 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
     const verify = jwt.decode(token);
     // console.log(verify)
     
-const total = await prisma.homemaid.count({where:{officeName:"Adel Abdulrahman Limited",}})
+const total = await prisma.homemaid.count({where:{officeName:verify.office,}})
 const countRelated = await prisma.homemaid.count({
-  where: {officeName:verify.office,
+  where: {
+    officeName:verify?.office,
     NewOrder: {
-      every: {},  // This ensures that only records with at least one related 'neworder' are counted
+      some: {HomemaidId:{not:{equals:null}}} // checks that there is at least one related neworder entry
     },
   },
 });
