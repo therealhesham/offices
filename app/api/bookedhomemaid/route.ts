@@ -23,7 +23,7 @@ const homemaidsWithOrders = await prisma.homemaid.findMany({take:20,skip:20*(Num
     
     officeName:verify?.office,
     NewOrder: {
-      some: {} // checks that there is at least one related neworder entry
+      some: {HomemaidId:{not:{equals:null}}} // checks that there is at least one related neworder entry
     }
   },
   include: {
