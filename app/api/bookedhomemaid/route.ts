@@ -14,7 +14,7 @@ const header = await headers();
 
 const token = header.get("authorization")?.split(' ')[1];
 const verify = jwt.decode(token)
-if(!verify){
+  if(!verify){
 
   throw new Error("not available token")
 }
@@ -23,7 +23,7 @@ const homemaidsWithOrders = await prisma.homemaid.findMany({take:20,skip:20*(Num
     
     officeName:verify?.office,
     NewOrder: {
-      some: {} // checks that there is at least one related neworder entry
+      every: {} // checks that there is at least one related neworder entry
     }
   },
   include: {
