@@ -20,7 +20,7 @@ const total = await prisma.homemaid.count({where:{officeName:"Adel Abdulrahman L
 const countRelated = await prisma.homemaid.count({
   where: {officeName:verify.office,
     NewOrder: {
-      some: {},  // This ensures that only records with at least one related 'neworder' are counted
+      every: {},  // This ensures that only records with at least one related 'neworder' are counted
     },
   },
 });

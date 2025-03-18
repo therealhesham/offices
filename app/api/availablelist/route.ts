@@ -23,7 +23,7 @@ if(!verify){
 }
 
 const homemaidsWithoutOrder = await prisma.homemaid.findMany({take:20,skip:20*(Number(url.searchParams.get("page"))-1),
-  where: {officeName:"Adel Abdulrahman Limited"
+  where: {officeName:verify.office
 ,    NewOrder: {
       none: {} 
     }
