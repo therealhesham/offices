@@ -24,7 +24,7 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
-  const [toggleCollapse, setToggleCollapse] = useState(false);
+  const [toggleCollapse, setToggleCollapse] = useState(true);
   const [isCollapsible, setIsCollapsible] = useState(false);
 
   // const router = useRouter();
@@ -36,7 +36,7 @@ const router = useRouter()
   );
 
   const wrapperClasses = classNames(
-    "h-screen px-4 pt-8 pb-4  bg-purple-100 flex justify-between flex-col",
+    "h-full px-4 pt-8 pb-4  bg-purple-100 flex justify-between  fixed  flex-col ",
     {
       ["w-80"]: !toggleCollapse,
       ["w-20"]: toggleCollapse,
@@ -84,7 +84,7 @@ const logout = async()=>{
       style={{ transition: "width 300ms cubic-bezier(0.2, 0, 0, 1) 0s" }}
     >
       <div className="flex flex-col">
-        <div className="flex items-center justify-between relative">
+        <div className="flex items-center justify-between fixed">
           <div className="flex items-center pl-1 gap-4">
             <LogoIcon />
             <span

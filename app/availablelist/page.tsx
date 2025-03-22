@@ -3,11 +3,12 @@
 import jwt from "jsonwebtoken";
 import { useEffect, useState, useCallback, useRef, useContext } from "react";
 import Sidebar from "../components/Sidebar";
+import Navbar from "../components/navigationbar";
 
 
 export default function Table() {
   const [filters, setFilters] = useState({
-    phonenumber: "",
+    phonenumber: "",Passportnumber:"",
     fullname: "",
   });
 
@@ -116,149 +117,181 @@ export default function Table() {
     [fetchData, state.loading, state.hasMore]
   );
 
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    // Function to update the screen width
+    const handleResize = () => {
+      setWidth(window.innerWidth);
+    };
+
+    // Set the initial screen width
+    handleResize();
+
+    // Add event listener for resizing
+    window.addEventListener('resize', handleResize);
+
+    // Clean up the event listener on component unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []); // Empty dependency array ensures this effect runs once on mount
+
   return (
-    <div className="flex   h-screen flex-row">
-<Sidebar/>
-      <div className=" mx-auto p-6 w-full">
+    <div className={` ${width > 600 ? "flex flex-row" : ""}   `}>
+    
+    {width > 600 ?<Sidebar/>:<div>
+      
+      <Navbar/>
+      </div>}
+      <div className="container mx-auto p-6 mr-2">
+
         <h1
           className={`text-left font-medium text-2xl mb-4 `}
         >
           Available Homemaids
         </h1>
-
         {/* Filter Section */}
-        <div className="flex justify-between mb-4">
+        <div className="lg:flex sm:justify-between md:gap-10 sm:gap-10 lg:gap-3  mb-4 lg:flex-row md:flex-column sm:flex-column">
           <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.fullname}
-              onChange={(e) => handleFilterChange(e, "fullname")}
-              placeholder="بحث بالاسم"
+              value={filters.Name}
+              onChange={(e) => handleFilterChange(e, "Name")}
+              placeholder="بحث باسم العاملة"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
           <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.phonenumber}
-              onChange={(e) => handleFilterChange(e, "phonenumber")}
-              placeholder="بحث برقم الجوال"
+              value={filters.Passportnumber}
+              onChange={(e) => handleFilterChange(e, "Passportnumber")}
+              placeholder="بحث برقم الجواز"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          {/* <div className="flex-1 px-2">
+{/* 
+          <div className="flex-1 px-2">
             <input
               type="text"
-              value={filters.Nationality}
-              onChange={(e) => handleFilterChange(e, "email")}
-              placeholder="بحث برقم الجوال"
+              value={filters.id}
+              onChange={(e) => handleFilterChange(e, "id")}
+              placeholder="بحث برقم العاملة"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div> */}
-
-          {/* <div className="flex-1 px-2">
-            <input
-              type="text"
-              value={filters.HomemaidId}
-              onChange={(e) => handleFilterChange(e, "HomemaidId")}
-              placeholder="Filter by CV"
-              className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
-            />
-          </div> */}
-          <div className="flex-1 px-1">
+          <div className="flex flex-row justify-center">
+          <div className="flex  px-1">
             <button
-              className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg focus:outline-none transition-all duration-200 ease-in-out"
+              className={
+                "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
+              }
               onClick={() => {
                 isFetchingRef.current = false;
-                setState({ data: [], hasMore: true, loading: false });
+                setHasMore(true);
                 setFilters({
-                  fullname: "",
-                  phonenumber: "",
+                  age: "",
+                  id: "",
+                  Passportnumber: "",
+                  Name: "",
                 });
+                setData([]);
                 pageRef.current = 1;
                 fetchData();
               }}
             >
-              اعادة ضبط
+              <h1>اعادة ضبط</h1>
             </button>
           </div>
-          <div className="flex-1 px-1">
+          <div className="flex px-1">
             <button
-              className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg focus:outline-none transition-all duration-200 ease-in-out"
-              // variant="contained"
-              // color="info"
+              className={
+                "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
+              }
               onClick={() => {
                 isFetchingRef.current = false;
-                setState({ data: [], hasMore: true, loading: false });
+                setHasMore(true);
+                setData([]);
                 pageRef.current = 1;
                 fetchData();
               }}
             >
-              بحث
+              <h1 >بحث</h1>
             </button>
+          </div>
           </div>
         </div>
 
-        {/* Table */}
-        <table className="min-w-full table-auto border-collapse bg-white shadow-md rounded-md">
-          <thead>
-            <tr className="bg-blue-500 text-white">
-              <th className="p-3 text-center text-sm font-medium">م</th>
-              <th className="p-3 text-center text-sm font-medium">الاسم</th>
-              <th className="p-3 text-center text-sm font-medium">
-                جواز السفر
-              </th>
-              <th className="p-3 text-center text-sm font-medium">الجوال</th>
-              <th className="p-3 text-center text-sm font-medium">
-                تاريخ اضافة العاملة
-              </th>
-              <th className="p-3 text-center text-sm font-medium">
-                عدد الطلبات
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {state.data.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="p-3 text-center text-sm text-gray-500"
-                >
-                  No results found
-                </td>
-              </tr>
-            ) : (
-              state.data.map((item) => (
-                <tr key={item.id} className="border-t">
-                  <td className="p-3 text-sm text-pretty text-gray-600">
-                    {item.id}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item.Name}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item.Passportnumber}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item.phone}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    {item?.createdat ? getDate(item.createdat) : null}
-                  </td>
-                  <td className="p-3 text-sm text-center text-gray-600">
-                    <button
-                      color="warning"
-                      
-                    >
-                      {/* {item._count.orders} */}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
 
+
+  {/* Table */}
+  <div className="grid overflow-y-scroll grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4  ">
+  {state.data.length === 0 ? (
+    <div className="col-span-full p-3 text-center text-sm text-gray-500">
+      No results found
+    </div>
+  ) : (
+    state.data.map((item) => (
+      <div
+        key={item.id}
+        className=" bg-gray-100 p-4  shadow-md rounded-md flex flex-col"
+      >
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">رقم العاملة:</span>
+          <span className="text-gray-600">{item.id}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">اسم العاملة:</span>
+          <span className="text-gray-600">{item.Name}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">جوال العاملة:</span>
+          <span className="text-gray-600">{item.phone}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">الجنسية:</span>
+          <span className="text-gray-600">{item.Nationalitycopy}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">رقم جواز السفر:</span>
+          <span className="text-gray-600">{item.Passportnumber}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">بداية الجواز:</span>
+          <span className="text-gray-600">
+            {item?.PassportStart ? item?.PassportStart : null}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">نهاية الجواز:</span>
+          <span className="text-gray-600">
+            {item?.PassportEnd ? item?.PassportEnd : null}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">الحالة الاجتماعية:</span>
+          <span className="text-gray-600">{item.maritalstatus}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">المكتب:</span>
+          <span className="text-gray-600">{item.officeName}</span>
+        </div>
+        <div className="mt-auto text-center">
+          <button
+            className="text-[#EFF7F9] bg-[#3D4C73] text-lg py-2 px-4 rounded-md transition-all duration-300"
+            onClick={() => {
+              const url = "/admin/cvdetails/" + item.id;
+              window.open(url, "_blank"); // Open in new window
+            }}
+          >
+            <h1>عرض</h1>
+          </button>
+        </div>
+      </div>
+    ))
+  )}
+</div>
         {/* Infinite scroll trigger */}
         {state.hasMore && (
           <div ref={loadMoreRef} className="flex justify-center mt-6">

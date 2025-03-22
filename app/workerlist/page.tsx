@@ -6,6 +6,7 @@ import translate from "translate";
 import { useEffect, useState, useCallback, useRef } from "react";
 import jwt from "jsonwebtoken";
 import Sidebar from "../components/Sidebar";
+import Navbar from "../components/navigationbar";
 // import { Button } from "@mui/material";
 // import Style from "styles/Home.module.css";
 
@@ -151,12 +152,38 @@ export default function Table() {
   const handleUpdate = (id) => {
     router.push("./neworder/" + id);
   };
-
+  
+  
+    const [width, setWidth] = useState(0);
+  
+    useEffect(() => {
+      // Function to update the screen width
+      const handleResize = () => {
+        setWidth(window.innerWidth);
+      };
+  
+      // Set the initial screen width
+      handleResize();
+  
+      // Add event listener for resizing
+      window.addEventListener('resize', handleResize);
+  
+      // Clean up the event listener on component unmount
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }, []); // Empty dependency array ensures this effect runs once on mount
+  
+  
   return (
-    // <Layout>
-    <div className="flex flex-row ">
-      <Sidebar/>
-      <div className="container mx-auto p-6">
+<div className={` ${width > 600 ? "flex flex-row" : ""}   `}>
+
+{width > 600 ?<Sidebar/>:<div>
+  
+  <Navbar/>
+  </div>}
+      
+      <div className="container mx-auto p-6 mr-2 overflow-y-auto">
         <h1
           className={`text-center font-medium text-2xl mb-4 `}
         >
@@ -164,7 +191,7 @@ export default function Table() {
         </h1>
 
         {/* Filter Section */}
-        <div className="flex justify-between mb-4">
+        <div className="lg:flex sm:justify-between md:gap-10 sm:gap-10 lg:gap-3  mb-4 lg:flex-row md:flex-column sm:flex-column">
           <div className="flex-1 px-2">
             <input
               type="text"
@@ -193,7 +220,8 @@ export default function Table() {
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          <div className="flex-1 px-1">
+          <div className="flex flex-row justify-center">
+          <div className="flex  px-1">
             <button
               className={
                 "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
@@ -215,7 +243,7 @@ export default function Table() {
               <h1>اعادة ضبط</h1>
             </button>
           </div>
-          <div className="flex-1 px-1">
+          <div className="flex px-1">
             <button
               className={
                 "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
@@ -231,103 +259,63 @@ export default function Table() {
               <h1 >بحث</h1>
             </button>
           </div>
+          </div>
         </div>
 
         {/* Table */}
-        <table className="min-w-full table-auto border-collapse bg-white shadow-md rounded-md">
-          <thead>
-            <tr className="bg-yellow-400 text-white">
-              <th className="p-3 text-center text-sm font-medium">
-                رقم العاملة
-              </th>
-              <th className="p-3 text-center text-sm font-medium">
-                اسم العاملة
-              </th>
-              <th className="p-3 text-center text-sm font-medium">
-                جوال العاملة
-              </th>
-              <th className="p-3 text-center text-sm font-medium">الجنسية</th>
-              <th className="p-3 text-center text-sm font-medium">
-                رقم جواز السفر
-              </th>
-
-              <th className="p-3 text-center text-sm font-medium">
-                بداية الجواز
-              </th>
-              <th className="p-3 text-center text-sm font-medium">
-                نهاية الجواز
-              </th>
-
-              <th className="p-3 text-center text-sm font-medium">
-                الحالة الاجتماعية
-              </th>
-              <th className="p-3 text-center text-sm font-medium">المكتب</th>
-
-              <th className="p-3 text-center text-sm font-medium">استعراض</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="p-3 text-center text-sm text-gray-500"
-                >
-                  No results found
-                </td>
-              </tr>
-            ) : (
-              data.map((item) => (
-                <tr key={item.id} className="border-t">
-                  <td className="p-3 text-md  text-center text-gray-700">
-                    {item.id}
-                  </td>
-                  <td className="p-3 text-md text-center text-gray-600">
-                    {item.Name}
-                  </td>
-                  <td className="p-3 text-md text-center text-gray-700">
-                    {item.phone}
-                  </td>
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item.Nationalitycopy}
-                  </td>
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item.Passportnumber}
-                  </td>
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item?.PassportStart ? item?.PassportStart : null}
-                  </td>
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item?.PassportEnd ? item?.PassportEnd : null}
-                  </td>
-
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item.maritalstatus}
-                  </td>
-
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    {item.officeName}
-                  </td>
-
-                  <td className="p-3 text-md text-gray-700 text-center">
-                    <button
-                      className={
-                        "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
-                      }
-                      onClick={() => {
-                        const url = "/admin/cvdetails/" + item.id;
-                        window.open(url, "_blank"); // Open in new window
-                      }}
-                    >
-                      <h1 >عرض</h1>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
+        <div className="grid overflow-y-scroll grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4  ">
+  {data.length === 0 ? (
+    <div className="col-span-full p-3 text-center text-sm text-gray-500">
+      No results found
+    </div>
+  ) : (
+    data.map((item) => (
+      <div
+        key={item.id}
+        className=" bg-gray-100 p-4  shadow-md rounded-md flex flex-col"
+      >
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">رقم العاملة:</span>
+          <span className="text-gray-600">{item.id}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">اسم العاملة:</span>
+          <span className="text-gray-600">{item.Name}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">جوال العاملة:</span>
+          <span className="text-gray-600">{item.phone}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">الجنسية:</span>
+          <span className="text-gray-600">{item.Nationalitycopy}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">رقم جواز السفر:</span>
+          <span className="text-gray-600">{item.Passportnumber}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">بداية الجواز:</span>
+          <span className="text-gray-600">
+            {item?.PassportStart ? item?.PassportStart : null}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">نهاية الجواز:</span>
+          <span className="text-gray-600">
+            {item?.PassportEnd ? item?.PassportEnd : null}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-700">الحالة الاجتماعية:</span>
+          <span className="text-gray-600">{item.maritalstatus}</span>
+        </div>
+        <div className="mt-auto text-center">
+        </div>
+      </div>
+    ))
+  )}
+</div>
         {/* Infinite scroll trigger */}
         {hasMore && (
           <div

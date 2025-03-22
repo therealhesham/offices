@@ -56,6 +56,30 @@ model Office {
   phonenumber String   @db.VarChar(15)
   
 }
+model Message {
+  id            Int        @id @default(autoincrement())
+  content       String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  senderId      Int
+  conversationId Int
+  status        String     @default("sent") // Added status for message state
+  sender        User       @relation("SenderMessages", fields: [senderId], references: [id])
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([senderId, conversationId])  // Adding index for performance
+}
+
+model Conversation {
+  id        Int         @id @default(autoincrement())
+  title     String      @default("New Conversation")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  users     User[]      @relation("UserConversations")
+  messages  Message[]
+
+  @@index([title])  // You can also index fields like title if you want to search by conversation name
+}
 
 model Client {
   id             Int        @id @default(autoincrement())
@@ -78,6 +102,8 @@ model User {
   id            Int       @id @default(autoincrement())
   phonenumber   String?   @unique @db.VarChar(15)
   admin         Boolean?  @default(false)
+    messages  Message[]   @relation("SenderMessages")
+  conversations Conversation[]@relation("UserConversations")
   pictureurl    String?   @default("")
   username      String    @db.VarChar(191)
   password      String    @db.VarChar(191)

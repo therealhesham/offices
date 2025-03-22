@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Navbar from "../components/navigationbar";
 
 export default function Home() {
 
@@ -77,14 +78,42 @@ useEffect(()=>{
   fetchRecentData();
 },[])
 // alert(lang)
+
+
+
+const [width, setWidth] = useState(0);
+
+useEffect(() => {
+  // Function to update the screen width
+  const handleResize = () => {
+    setWidth(window.innerWidth);
+  };
+
+  // Set the initial screen width
+  handleResize();
+
+  // Add event listener for resizing
+  window.addEventListener('resize', handleResize);
+
+  // Clean up the event listener on component unmount
+  return () => {
+    window.removeEventListener('resize', handleResize);
+  };
+}, []); // Empty dependency array ensures this effect runs once on mount
+
+
+
 return (
-    <div className="flex   h-screen flex-row">
+  // <Layout>
+<div className={` ${width > 600 ? "flex flex-row" : ""}   `}>
 
-      < Sidebar/>
-           {/* Topbar */}
+{width > 600 ?<Sidebar/>:<div>
 
-      {/* Main Content */}
-      <div className="flex h-screen overflow-auto bg-gray-100 w-full justify-center">
+<Navbar/>
+</div>}
+    
+    {/* <div className="container mx-auto p-6 mr-2"> */}
+            <div className="flex h-screen overflow-auto bg-gray-100 w-full justify-center ">
 
         {/* Dashboard Widgets */}
         <div className="p-6 w-full">
