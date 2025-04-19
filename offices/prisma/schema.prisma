@@ -10,13 +10,14 @@ datasource db {
 model homemaid {
   id                Int        @id @default(autoincrement())
   officeID          Int?
-  weeklyStatusId   weeklyStatus[]
   Nationalitycopy   String?    @db.VarChar(255)
   Name              String?    @db.VarChar(255)
   Religion          String?    @db.VarChar(255)
   Passportnumber    String?    @db.VarChar(255)
   clientphonenumber String?    @db.VarChar(15)
   Picture           Json?
+  createdAt      DateTime?  @default(now())
+
   ExperienceYears   String?    @db.VarChar(255)
   maritalstatus     String?    @db.VarChar(255)
   Experience        String?    @db.VarChar(255)
@@ -46,50 +47,38 @@ SewingLeveL   String? @db.VarChar(20)
 BabySitterLevel String? @db.VarChar(20)
 Education String? @db.VarChar(60)
 Housed          housing[]   
-  inHouse        housedworker[]
-
 }
-model weeklyStatus{
-  id              Int       @id @default(autoincrement())
 
-homeMaid_id  Int
-  status          String?   @db.VarChar(255)
-  date            DateTime? 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  HomeMaid        homemaid? @relation(fields: [homeMaid_id], references: [id])  
-
-  employee          String?   @db.VarChar(255)
-
-  
-}
-model CheckIn {
-  isActive        Boolean? @default(true)
-  id              Int       @id @default(autoincrement())
-  housedWorkerId  Int       // حقل جديد للربط مع housedworker
-  breakfastOption String?   @db.VarChar(255)
-  breakfastNotes  String?   @db.VarChar(255)
-  lunchOption     String?   @db.VarChar(255)
-  lunchCost     Int? 
-supperCost     Int?
-breakfastCost  Int?
-CheckDate   DateTime?
-  lunchNotes      String?   @db.VarChar(255)
-  supperOption    String?   @db.VarChar(255)
-  supperNotes     String?   @db.VarChar(255)
-  complaint       String?   @db.VarChar(255)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-cost              String?
-  // العلاقة مع housedworker
-  HousedWorker    housedworker? @relation(fields: [housedWorkerId], references: [id])
-}
 model Office {
   id         Int       @id @default(autoincrement())
   Officename String    @unique @db.VarChar(191)
   Location   String    @db.VarChar(191)
   phonenumber String   @db.VarChar(15)
   
+}
+model Message {
+  id            Int        @id @default(autoincrement())
+  content       String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  senderId      Int
+  conversationId Int
+  status        String     @default("sent") // Added status for message state
+  sender        User       @relation("SenderMessages", fields: [senderId], references: [id])
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([senderId, conversationId])  // Adding index for performance
+}
+
+model Conversation {
+  id        Int         @id @default(autoincrement())
+  title     String      @default("New Conversation")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  users     User[]      @relation("UserConversations")
+  messages  Message[]
+
+  @@index([title])  // You can also index fields like title if you want to search by conversation name
 }
 
 model Client {
@@ -113,6 +102,8 @@ model User {
   id            Int       @id @default(autoincrement())
   phonenumber   String?   @unique @db.VarChar(15)
   admin         Boolean?  @default(false)
+    messages  Message[]   @relation("SenderMessages")
+  conversations Conversation[]@relation("UserConversations")
   pictureurl    String?   @default("")
   username      String    @db.VarChar(191)
   password      String    @db.VarChar(191)
@@ -154,8 +145,6 @@ model neworder {
   bookingstatus      String?   @db.VarChar(255)
   profileStatus      String?   @db.VarChar(255)
 transactios transactions[]
-  isHidden        Boolean? @default(false)
-
   ReasonOfRejection  String?   @db.VarChar(255)
   housed              housing[]
   income              income[]
@@ -170,7 +159,7 @@ transactios transactions[]
   maritalstatus      String?   @db.VarChar(255)
   Experience         String?   @db.VarChar(255)
   dateofbirth       String?   @db.VarChar(255)
-  Nationality        Json?
+  // Nationality        Json?
   age                Int?
   flag               Json?
   phone              String?   @db.VarChar(15)
@@ -183,6 +172,7 @@ transactios transactions[]
   HomeMaid           homemaid? @relation(fields: [HomemaidId], references: [id])
   OrderStatus        OrderStatus[]
   arrivals        arrivallist[]
+  inHouse        housedworker[]
 
 }
 
@@ -309,6 +299,9 @@ model offices {
   id                    Int       @id @default(autoincrement())
   office            String?    @db.VarChar(191) @unique
 Country         String?    @db.VarChar(191)
+office_id         String?    @db.VarChar(191)
+
+password        String?    @db.VarChar(191)
 phoneNumber     String ?@db.VarChar(191)
 HomeMaid  homemaid[]
 }
@@ -335,27 +328,18 @@ transaction_date   DateTime? @default(now())
   
 }
 
-
-model housedworker {
-deparatureReason  String?   @db.VarChar(100) 
-deparatureHousingDate  DateTime? 
-
-  id             Int       @id @default(autoincrement())
-  homeMaid_id       Int       @unique
-  Reason         String?   @db.VarChar(100)
-  employee       String?   @db.VarChar(100)
-  isActive        Boolean? @default(true)
-  Details        String?   @db.VarChar(255)
-  houseentrydate DateTime?
-  transaction_type String?
-  deliveryDate   DateTime?
-  status    String?   @db.VarChar(100)
-  // العلاقة مع CheckIn
-  checkIns       CheckIn[] // يحتوي على جميع سجلات CheckIn المرتبطة بهذا العامل
+model housedworker{
+id          Int @id @default(autoincrement())
+order_id    Int @unique
+Details     String? @db.VarChar(100)
+Order         neworder @relation(references: [id],fields: [order_id])
+houseentrydate     DateTime?
+transaction_type    String? 
+deliveryDate     DateTime?
+// transaction_date   DateTime? @default(now())
   
-  // العلاقة مع neworder
-  Order          homemaid  @relation(fields: [homeMaid_id], references: [id])
 }
+
 
 model income{
 transaction_id Int @id @default(autoincrement())

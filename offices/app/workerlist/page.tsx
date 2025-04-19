@@ -56,7 +56,7 @@ export default function Table() {
         page: String(pageRef.current),
       });
 
-      const response = await fetch(`/api/bookedhomemaid?${queryParams}`, {
+      const response = await fetch(`/api/list?${queryParams}`, {
         headers: {
           authorization:`bearer ${storage}`,
 
@@ -152,45 +152,42 @@ export default function Table() {
   const handleUpdate = (id) => {
     router.push("./neworder/" + id);
   };
-
-
-  const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    // Function to update the screen width
-    const handleResize = () => {
-      setWidth(window.innerWidth);
-    };
-
-    // Set the initial screen width
-    handleResize();
-
-    // Add event listener for resizing
-    window.addEventListener('resize', handleResize);
-
-    // Clean up the event listener on component unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []); // Empty dependency array ensures this effect runs once on mount
-
-
-
-
+  
+  
+    const [width, setWidth] = useState(0);
+  
+    useEffect(() => {
+      // Function to update the screen width
+      const handleResize = () => {
+        setWidth(window.innerWidth);
+      };
+  
+      // Set the initial screen width
+      handleResize();
+  
+      // Add event listener for resizing
+      window.addEventListener('resize', handleResize);
+  
+      // Clean up the event listener on component unmount
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }, []); // Empty dependency array ensures this effect runs once on mount
+  
+  
   return (
-    // <Layout>
-<div className={` ${width > 600 ? "flex h-screen flex-row" : ""}   `}>
+<div className={` ${width > 600 ? "flex flex-row" : ""}   `}>
 
 {width > 600 ?<Sidebar/>:<div>
   
   <Navbar/>
   </div>}
       
-      <div  className="container mx-auto p-6 mr-2 min-h-screen  bg-gray-100 flex-1 overflow-auto">
+      <div className="container mx-auto p-6 mr-2 overflow-y-auto">
         <h1
           className={`text-center font-medium text-2xl mb-4 `}
         >
-         Booked Homemaids
+          قائمة العاملات
         </h1>
 
         {/* Filter Section */}
@@ -213,7 +210,7 @@ export default function Table() {
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
           </div>
-{/* 
+
           <div className="flex-1 px-2">
             <input
               type="text"
@@ -222,13 +219,12 @@ export default function Table() {
               placeholder="بحث برقم العاملة"
               className="p-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
             />
-          </div> */}
+          </div>
           <div className="flex flex-row justify-center">
-
-          <div className="flex-1 px-1">
+          <div className="flex  px-1">
             <button
               className={
-                "text-[#EFF7F9]  bg-[#3D4C73]  text-sm py-2 px-4 rounded-md transition-all duration-300"
+                "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
               }
               onClick={() => {
                 isFetchingRef.current = false;
@@ -247,7 +243,7 @@ export default function Table() {
               <h1>اعادة ضبط</h1>
             </button>
           </div>
-          <div className="flex-1 px-1">
+          <div className="flex px-1">
             <button
               className={
                 "text-[#EFF7F9]  bg-[#3D4C73]  text-lg py-2 px-4 rounded-md transition-all duration-300"
@@ -264,11 +260,10 @@ export default function Table() {
             </button>
           </div>
           </div>
-
         </div>
 
         {/* Table */}
-        <div className="grid overflow-y-scroll grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 ">
+        <div className="grid overflow-y-scroll grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4  ">
   {data.length === 0 ? (
     <div className="col-span-full p-3 text-center text-sm text-gray-500">
       No results found
@@ -315,26 +310,12 @@ export default function Table() {
           <span className="font-medium text-gray-700">الحالة الاجتماعية:</span>
           <span className="text-gray-600">{item.maritalstatus}</span>
         </div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="font-medium text-gray-700">حالة الطلب:</span>
-          <span className="text-gray-600">{item.NewOrder[0].bookingstatus}</span>
+        <div className="mt-auto text-center">
         </div>
-        {/* <div className="mt-auto text-center">
-          <button
-            className="text-[#EFF7F9] bg-[#3D4C73] text-lg py-2 px-4 rounded-md transition-all duration-300"
-            onClick={() => {
-              const url = "/admin/cvdetails/" + item.id;
-              window.open(url, "_blank"); // Open in new window
-            }}
-          >
-            <h1>عرض</h1>
-          </button> */}
-        {/* </div> */}
       </div>
     ))
   )}
 </div>
-
         {/* Infinite scroll trigger */}
         {hasMore && (
           <div
