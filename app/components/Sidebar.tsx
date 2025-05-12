@@ -19,7 +19,7 @@ const navItems = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Booked Homemaid', href: '/bookedhomemaid', icon: CalendarIcon },
   { name: 'Available List', href: '/availablelist', icon: UsersIcon },
-  { name: 'List', href: '/list', icon: ListBulletIcon },
+  { name: 'List', href: '/workerlist', icon: ListBulletIcon },
 ];
 
 export default function Sidebar() {
