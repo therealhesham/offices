@@ -99,35 +99,39 @@ export default function Home() {
   };
 
   // Memoize widget data to optimize re-renders
-  const widgets = useMemo(
-    () => [
-      {
-        title: lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : 'New Reservations',
-        value: counting?.recent,
-        icon: <FiList />,
-        id: 'new-reservations',
-      },
-      {
-        title: lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids',
-        value: counting?.countAvailable,
-        icon: <FiUserPlus />,
-        id: 'available-homemaids',
-      },
-      {
-        title: lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : 'Booked',
-        value: counting?.countRelated,
-        icon: <FiGrid />,
-        id: 'booked',
-      },
-      {
-        title: lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : 'Total',
-        value: counting?.total,
-        icon: <FiGrid />,
-        id: 'total',
-      },
-    ],
-    [counting, lang]
-  );
+const widgets = useMemo(
+  () => [
+    {
+      title: lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : 'New Reservations',
+      value: counting?.recent,
+      icon: <FiList />,
+      id: 'new-reservations',
+      link: '/bookedhomemaid', // Link for New Reservations
+    },
+    {
+      title: lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids',
+      value: counting?.countAvailable,
+      icon: <FiUserPlus />,
+      id: 'available-homemaids',
+      link: '/availablelist', // Link for Available Homemaids
+    },
+    {
+      title: lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : 'Booked',
+      value: counting?.countRelated,
+      icon: <FiGrid />,
+      id: 'booked',
+      link: '/bookedhomemaid', // Link for Booked (reusing bookedhomemaid)
+    },
+    {
+      title: lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : 'Total',
+      value: counting?.total,
+      icon: <FiGrid />,
+      id: 'total',
+      link: '/workerlist', // Link for Total
+    },
+  ],
+  [counting, lang]
+);
 
   // Animation variants for Framer Motion
   const containerVariants = {
@@ -208,57 +212,58 @@ export default function Home() {
             {lang === 'fra' ? 'Tableau de bord' : lang === 'ur' ? 'ڈیش بورڈ' : 'Dashboard Overview'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoading
-              ? Array(4)
-                  .fill()
-                  .map((_, index) => (
-                    <div
-                      key={index}
-                      className={`p-6 rounded-2xl shadow-lg ${
-                        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                      } animate-pulse`}
-                    >
-                      <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                      <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-                    </div>
-                  ))
-              : widgets.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    className={`p-6 rounded-2xl shadow-xl bg-gradient-to-br ${
-                      theme === 'dark'
-                        ? 'from-gray-800 to-gray-900'
-                        : 'from-white to-gray-50'
-                    } flex items-center space-x-4`}
-                    variants={cardVariants}
-                    whileHover="hover"
-                    role="region"
-                    aria-labelledby={item.id}
-                    data-tooltip-id={item.id}
-                    data-tooltip-content={item.title}
-                  >
-                    <div className="text-purple-500 text-3xl">{item.icon}</div>
-                    <div>
-                      <h3
-                        id={item.id}
-                        className={`text-lg font-semibold ${
-                          theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                        }`}
-                      >
-                        {item.title}
-                      </h3>
-                      <p
-                        className={`text-2xl font-bold ${
-                          theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
-                        }`}
-                      >
-                        {item.value || 0}
-                      </p>
-                    </div>
-                    <Tooltip id={item.id} />
-                  </motion.div>
-                ))}
+  {isLoading
+    ? Array(4)
+        .fill()
+        .map((_, index) => (
+          <div
+            key={index}
+            className={`p-6 rounded-2xl shadow-lg ${
+              theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+            } animate-pulse`}
+          >
+            <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
           </div>
+        ))
+    : widgets.map((item) => (
+        <Link href={item.link} key={item.id}>
+          <motion.div
+            className={`p-6 rounded-2xl shadow-xl bg-gradient-to-br ${
+              theme === 'dark'
+                ? 'from-gray-800 to-gray-900'
+                : 'from-white to-gray-50'
+            } flex items-center space-x-4 cursor-pointer`}
+            variants={cardVariants}
+            whileHover="hover"
+            role="region"
+            aria-labelledby={item.id}
+            data-tooltip-id={item.id}
+            data-tooltip-content={item.title}
+          >
+            <div className="text-purple-500 text-3xl">{item.icon}</div>
+            <div>
+              <h3
+                id={item.id}
+                className={`text-lg font-semibold ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}
+              >
+                {item.title}
+              </h3>
+              <p
+                className={`text-2xl font-bold ${
+                  theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                }`}
+              >
+                {item.value || 0}
+              </p>
+            </div>
+            <Tooltip id={item.id} />
+          </motion.div>
+        </Link>
+      ))}
+</div>
         </motion.div>
 
         {/* Messages Section */}
