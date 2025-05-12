@@ -168,7 +168,7 @@ export default function Home() {
             {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : 'Welcome'}
           </h1>
           <div className="flex items-center space-x-4">
-            <motion.button
+            {/* <motion.button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className={`p-2 rounded-full ${
                 theme === 'dark' ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-800'
@@ -180,7 +180,7 @@ export default function Home() {
               data-tooltip-content={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-            </motion.button>
+            </motion.button> */}
             <Tooltip id="theme-tooltip" />
             <Link href="/newemployer">
               <motion.button

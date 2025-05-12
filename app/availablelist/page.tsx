@@ -137,7 +137,7 @@ export default function Table() {
 
   return (
     <div className={`min-h-screen ${width > 768 ? 'flex flex-row' : 'flex flex-col'} font-sans transition-colors duration-300 ${darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-gray-50 to-indigo-50'}`}>
-      {width > 768 ? <Sidebar /> : <Navbar />}
+<Sidebar/>
       <div className="flex-1 p-4 md:p-8 overflow-auto relative">
         {/* Dark Mode Toggle */}
         <button

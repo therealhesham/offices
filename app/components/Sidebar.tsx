@@ -71,7 +71,7 @@ export default function Sidebar() {
     <>
       <button
         onClick={toggleMobileSidebar}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white"
+        className="md:hidden fixed top-4 left-4  z-50 p-2 rounded-md bg-gray-800 text-white"
         aria-label="Toggle mobile menu"
       >
         {isMobileOpen ? (
@@ -80,13 +80,14 @@ export default function Sidebar() {
           <ChevronRightIcon className="h-6 w-6" />
         )}
       </button>
-      <motion.aside
-  initial={{ width: isCollapsed ? 64 : 256 }}
-  animate={{ width: isCollapsed ? 64 : 256 }}
-  transition={{ duration: 0.3, ease: 'easeInOut' }}
-  className="fixed top-0 left-0 h-screen bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg z-40 flex flex-col justify-between overflow-y-auto"
->
-
+<div className={`flex mr-9 ${isCollapsed?"mr-9":"mr-[256]"}`} >    
+    <motion.aside
+        initial={{ width: isCollapsed ? 64 : 256 }}
+        animate={{ width: isCollapsed ? 64 : 256 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className={`fixed top-0 left-0 h-screen  bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg flex flex-col justify-between overflow-y-auto z-40
+          ${isMobileOpen ? 'block md:block' : 'hidden md:block'}`}
+      >
         <div className="p-4 flex items-center justify-between">
           <AnimatePresence>
             {!isCollapsed && (
@@ -190,8 +191,7 @@ export default function Sidebar() {
                   <span className="text-sm font-semibold">JD</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">John Doe</p>
-                  <p className="text-xs text-gray-400">john@example.com</p>
+                  {/* User info can be added here */}
                 </div>
               </div>
             ) : (
@@ -213,6 +213,8 @@ export default function Sidebar() {
           </div>
         </div>
       </motion.aside>
+      </div>
+
 
       {isMobileOpen && (
         <div

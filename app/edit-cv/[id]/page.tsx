@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import Sidebar from '@/app/components/Sidebar';
 
 interface Homemaid {
   id: number;
@@ -91,8 +92,11 @@ export default function EditCV() {
   if (!formData) return <div className="text-center text-white">CV not found</div>;
 
   return (
+
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full">
+      <div className="bg-white rounded-2xl  shadow-2xl p-8 max-w-4xl w-full">
+      <Sidebar />
+     
         <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
           Edit CV
         </h1>
