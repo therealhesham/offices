@@ -1,6 +1,10 @@
+import { url } from "inspector";
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig = {images: {
+  remotePatterns: [
+   { protocol: "https", hostname: "v5.airtableusercontent.com" },
+  ]},  
   /* config options here */
   typescript: {
     // !! WARN !!

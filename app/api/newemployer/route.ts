@@ -47,7 +47,7 @@ const header = await headers();
 
 const token = header.get("authorization")?.split(' ')[1];
 const verify = jwt.decode(token)
-
+console.log(verify.office)
     // Insert into the database
     const newHomemaid = await prisma.homemaid.create({
       data: {
@@ -68,7 +68,8 @@ const verify = jwt.decode(token)
         phone,
         bookingstatus,
         ages,
-        officeName:verify.office,
+        office:{connect:{office:verify.office}},
+        officeName:verify?.officeName,
         experienceType,
         PassportStart:new Date(PassportStart).toLocaleDateString(),
         PassportEnd:new Date(PassportEnd).toLocaleDateString(),

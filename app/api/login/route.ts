@@ -10,12 +10,10 @@ export async function POST(req) {
   try {
     // Parse the request body
     const m = await req.json();
-
     const fetching = await prisma.offices.findFirst({
       where: { office_id: m.id, password: m.password },
     });
 
-    console.log(fetching); // For debugging: logs the result of the database query
 
     if (fetching) {
       // Sign the JWT with office data (could be a subset of the office data, not the entire object)
@@ -23,7 +21,6 @@ export async function POST(req) {
         expiresIn: '1h', // Optionally add expiration time
       });
 
-      console.log(signing); // For debugging: logs the signed JWT
       const cookieStore = await cookies()
       cookieStore.set("token",signing)
       // Return the signed JWT in the response
@@ -32,7 +29,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Office not found' }, { status: 404 });
     }
   } catch (error) {
-    console.error(error);
+    console.log(error);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }

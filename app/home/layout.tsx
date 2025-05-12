@@ -8,6 +8,7 @@ import React from 'react';
 const Layout = ({ children }) => {
   return (
     <div>
+      
       {/* Your layout content here */}
       {children}
     </div>
