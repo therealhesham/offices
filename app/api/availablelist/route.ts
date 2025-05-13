@@ -32,8 +32,8 @@ if (Passportnumber)
 
 const verify = jwt.decode(token)
 if(!verify){
+  return NextResponse.json({message: 'not available token' });
 
-  throw new Error("not available token")
 }
 
 const homemaidsWithoutOrder = await prisma.homemaid.findMany({take:20,skip:20*(Number(url.searchParams.get("page"))-1),
@@ -48,6 +48,7 @@ const homemaidsWithoutOrder = await prisma.homemaid.findMany({take:20,skip:20*(N
 return NextResponse.json(homemaidsWithoutOrder);
   } catch (error) {
     console.log(error)
-    res.status(500).json({ message: 'Internal Server Error' });
+return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+
   }
 }

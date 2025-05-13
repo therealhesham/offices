@@ -6,9 +6,8 @@ import { cookies } from 'next/headers'
  
 const prisma = new PrismaClient();
 
-export async function POST(req) {
+export async function GET(req) {
   try {
-    const m = await req.json();
 
       const cookieStore = await cookies()
       cookieStore.delete("token")

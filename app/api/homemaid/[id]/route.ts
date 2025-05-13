@@ -1,18 +1,55 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { parse } from 'path';
-
+import jwt from 'jsonwebtoken'; // Example: Using jsonwebtoken for JWT decoding
+import { cookies } from 'next/headers';
 const prisma = new PrismaClient();
+
+// Secret key for JWT (replace with your actual secret, ideally from environment variables)
+const JWT_SECRET = process.env.JWT_SECRET || 'sss';
+
+// Helper function to get the authenticated user's office
+async function getUserOffice(request: Request): Promise<string | null> {
+  try {
+    const cookieStore = await cookies()
+      const token =cookieStore.get('token')
+    console.log(token?.value)
+    // Extract JWT from Authorization header (format: Bearer <token>)
+    // const authHeader = request.headers.get('Authorization');
+    // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    //   return null;
+    // }
+
+    // Decode JWT (replace with your actual JWT verification logic)
+    if (!token ) {
+      throw new Error('Invalid or missing token');
+    }
+    const decoded = jwt.verify(token?.value, "sss") as { office: string };
+    if (!decoded || !decoded.office) {  
+      return null;
+    }
+
+    return decoded.office;
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params; 
-    console.log(id);
-//    console.log(params.id)
-    // const id = parseInt(params.id);
+    // Extract homemaid ID from params
+    const { id } = await params;
+    const homemaidId = parseInt(id);
 
+    // Get the authenticated user's office
+    const userOffice = await getUserOffice(request);
+    if (!userOffice) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid or missing authentication' }, { status: 401 });
+    }
+
+    // Fetch the homemaid record
     const homemaid = await prisma.homemaid.findUnique({
-      where: { id:parseInt(id) },
+      where: { id: homemaidId },
       include: {
         weeklyStatusId: true,
         office: true,
@@ -30,68 +67,54 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     });
 
     if (!homemaid) {
-      return NextResponse.json(
-        { error: 'Homemaid not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Homemaid not found' }, { status: 404 });
+    }
+
+    // Check if the user's office matches the homemaid's officeName
+    // If officeName can be null, handle it (e.g., deny access or allow if null is valid)
+    if (!homemaid.officeName || homemaid.officeName !== userOffice) {
+      return NextResponse.json({ error: 'Forbidden: You do not have access to this homemaid' }, { status: 403 });
     }
 
     return NextResponse.json(homemaid, { status: 200 });
   } catch (error) {
     console.error('Error fetching homemaid:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } finally {
+    // Ensure Prisma client is disconnected to prevent connection leaks
+    await prisma.$disconnect();
   }
 }
 
-
-// model homemaid {
-//     id                Int        @id @default(autoincrement())
-//     officeID          Int?
-//     weeklyStatusId   weeklyStatus[]
-//     Nationalitycopy   String?    @db.VarChar(255)
-//     Name              String?    @db.VarChar(255)
-//     Religion          String?    @db.VarChar(255)
-//     Passportnumber    String?    @db.VarChar(255)
-//     clientphonenumber String?    @db.VarChar(15)
-//     Picture           Json?
-//     FullPicture           Json?
-  
-//     ExperienceYears   String?    @db.VarChar(255)
-//     maritalstatus     String?    @db.VarChar(255)
-//     Experience        String?    @db.VarChar(255)
-//     dateofbirth       String?    @db.VarChar(255)
-//     Nationality       Json?
-//     age               Int?
-//     flag              Json?
-//     phone             String?    @db.VarChar(17)
-//     bookingstatus     String?    @db.VarChar(255)
-//     ages              String?    @db.VarChar(255)
-//     officeName        String?    @db.VarChar(255)
-//     office            offices?    @relation(fields: [officeName], references: [office])
-//     NewOrder          neworder[]
-//     Client            Client[]
-//   experienceType      String?  @db.VarChar(100)
-//   PassportStart       String? @db.VarChar(100)
-//   PassportEnd       String? @db.VarChar(100)
-//   OldPeopleCare       Boolean?
-//   ArabicLanguageLeveL String? @db.VarChar(100)
-//   EnglishLanguageLevel    String? @db.VarChar(100)
-//   Salary                    String? @db.VarChar(20)
-//   LaundryLeveL   String? @db.VarChar(20)
-//   IroningLevel   String? @db.VarChar(20)
-//   CleaningLeveL   String? @db.VarChar(20)
-//   CookingLeveL   String? @db.VarChar(20)
-//   SewingLeveL   String? @db.VarChar(20)
-//   BabySitterLevel String? @db.VarChar(20)
-//   Education String? @db.VarChar(60)
- 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params; 
+    // Extract homemaid ID from params
+    const { id } = await params;
     const homemaidId = parseInt(id);
+
+    // Get the authenticated user's office
+    const userOffice = await getUserOffice(request);
+    if (!userOffice) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid or missing authentication' }, { status: 401 });
+    }
+
+    // Fetch the homemaid record to check officeName
+    const homemaid = await prisma.homemaid.findUnique({
+      where: { id: homemaidId },
+      select: { officeName: true },
+    });
+
+    if (!homemaid) {
+      return NextResponse.json({ error: 'Homemaid not found' }, { status: 404 });
+    }
+
+    // Check if the user's office matches the homemaid's officeName
+    // If officeName can be null, handle it (e.g., deny access or allow if null is valid)
+    if (!homemaid.officeName || homemaid.officeName !== userOffice) {
+      return NextResponse.json({ error: 'Forbidden: You do not have access to this homemaid' }, { status: 403 });
+    }
+
+    // Parse request body for update data
     const body = await request.json();
     const {
       officeID,
@@ -109,25 +132,26 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       age,
       flag,
       phone,
-        bookingstatus,
+      bookingstatus,
       ages,
       officeName,
-        experienceType,
-        PassportStart,
-        PassportEnd,
-        OldPeopleCare,
-        ArabicLanguageLeveL,
-        EnglishLanguageLevel,
-        Salary,
-        LaundryLeveL,
-        IroningLevel,
-        CleaningLeveL,
-        CookingLeveL,
-        SewingLeveL,
-        BabySitterLevel,
-        Education,
+      experienceType,
+      PassportStart,
+      PassportEnd,
+      OldPeopleCare,
+      ArabicLanguageLeveL,
+      EnglishLanguageLevel,
+      Salary,
+      LaundryLeveL,
+      IroningLevel,
+      CleaningLeveL,
+      CookingLeveL,
+      SewingLeveL,
+      BabySitterLevel,
+      Education,
     } = body;
-    // Validate required fields, or handle with default/fallback values
+
+    // Update the homemaid record
     const updatedHomemaid = await prisma.homemaid.update({
       where: { id: homemaidId },
       data: {
@@ -163,28 +187,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         SewingLeveL,
         BabySitterLevel,
         Education,
-        },
-        include: {
-          office: true,
-          NewOrder: true,
-          Client: true,
-          Session: true,
-          logs: true,
-          Housed: true,
-          inHouse: {
-            include: {
-              checkIns: true,
-            },
+      },
+      include: {
+        office: true,
+        NewOrder: true,
+        Client: true,
+        Session: true,
+        logs: true,
+        Housed: true,
+        inHouse: {
+          include: {
+            checkIns: true,
           },
         },
+      },
     });
+
     return NextResponse.json(updatedHomemaid, { status: 200 });
-    }
-    catch (error) {
-        console.error('Error updating homemaid:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-        }
-    }
+  } catch (error) {
+    console.error('Error updating homemaid:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } finally {
+    // Ensure Prisma client is disconnected to prevent connection leaks
+    await prisma.$disconnect();
+  }
+}

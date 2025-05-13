@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Sidebar from '@/app/components/Sidebar';
 import { PencilIcon } from '@heroicons/react/24/solid';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 interface Homemaid {
   id: number;
@@ -55,7 +56,7 @@ const CVDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [image, setImage] = useState("");
   const router = useRouter();
-
+const {language} = useLanguage()
   useEffect(() => {
     const fetchHomemaid = async () => {
       try {
@@ -289,6 +290,8 @@ const CVDetailsPage = () => {
             <h2 className="text-2xl font-semibold text-blue-700 mb-4">
               Weekly Status
             </h2>
+
+
             {homemaid.weeklyStatusId.length > 0 ? (
               <ul className="list-disc pl-5">
                 {homemaid.weeklyStatusId.map((status) => (

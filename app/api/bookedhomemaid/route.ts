@@ -26,7 +26,8 @@ if (Passportnumber)
 
 
 const verify = jwt.decode(token)
-  if(!verify){
+
+if(!verify){
 
   throw new Error("not available token")
 }

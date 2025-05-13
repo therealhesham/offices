@@ -2,81 +2,31 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUserPlus, FiMessageSquare, FiList, FiGrid, FiSun, FiMoon } from 'react-icons/fi';
+import { FiUserPlus, FiMessageSquare, FiList, FiSun, FiMoon } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
 import toast, { Toaster } from 'react-hot-toast';
 import { Tooltip } from 'react-tooltip';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/navigationbar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
+import { useLanguage } from '../contexts/LanguageContext';
+import Navbar from '../components/navigationbar';
 export default function Home() {
   const ISSERVER = typeof window === 'undefined';
-  let storage, lang;
+  let storage, lang, user;
   if (!ISSERVER) {
     storage = localStorage.getItem('_item');
     lang = localStorage.getItem('language');
+    user = JSON.parse(localStorage.getItem('user') || '{}'); // Hypothetical user data
   }
 
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]); // Placeholder for messages
   const [dataList, setDataList] = useState([]);
   const [counting, setCounting] = useState({});
   const [width, setWidth] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch counters for dashboard widgets
-  const fetchCounter = async () => {
-    if (!storage) {
-      toast.error('Please log in to continue');
-      return router.push('/login');
-    }
-    try {
-      setIsLoading(true);
-      const fetcher = await fetch('/api/counter', {
-        method: 'GET',
-        headers: {
-          authorization: `bearer ${storage}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-      const counters = await fetcher.json();
-      setCounting(counters);
-      toast.success('Dashboard data loaded');
-    } catch (error) {
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch recent data for the list
-  const fetchRecentData = async () => {
-    if (!storage) {
-      toast.error('Please log in to continue');
-      return router.push('/login');
-    }
-    try {
-      setIsLoading(true);
-      const fetchList = await fetch('/api/recentlist', {
-        method: 'GET',
-        headers: {
-          authorization: `bearer ${storage}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-      const jsonifyList = await fetchList.json();
-      setDataList(jsonifyList);
-    } catch (error) {
-      toast.error('Failed to load recent list');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Handle window resize for responsive design
   useEffect(() => {
@@ -86,60 +36,124 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch data on component mount
+  // Set RTL for Urdu
   useEffect(() => {
-    fetchCounter();
-    fetchRecentData();
+    document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
+  }, [lang]);
+
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`/api/messages?type=${activeTab}`, {
+        method: 'GET',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      setMessages(data);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!storage) {
+        toast.error('Please log in to continue');
+        return router.push('/login');
+      }
+      try {
+        setIsLoading(true);
+        const [counterRes, recentRes,messagesList] = await Promise.all([
+          fetch('/api/counter', {
+            method: 'GET',
+            headers: {
+              authorization: `bearer ${storage}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }),
+          fetch('/api/recentlist', {
+            method: 'GET',
+            headers: {
+              authorization: `bearer ${storage}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }),fetch(`/api/messages?type=inbox`, {
+            method: 'GET',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          })
+        ]);
+        const [counters, recentList,messageing] = await Promise.all([
+          counterRes.json(),
+          recentRes.json(), messagesList.json()
+        ]);
+        setCounting(counters);
+        setDataList(recentList);
+        setMessages(messageing)
+        toast.success('Dashboard data loaded');
+      } catch (error) {
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   // Format date for display
   const getDate = (date) => {
     const currentDate = new Date(date);
-    return currentDate.toISOString().split('T')[0];
+    return currentDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
-  // Memoize widget data to optimize re-renders
-const widgets = useMemo(
-  () => [
-    {
-      title: lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : 'New Reservations',
-      value: counting?.recent,
-      icon: <FiList />,
-      id: 'new-reservations',
-      link: '/bookedhomemaid', // Link for New Reservations
-    },
-    {
-      title: lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids',
-      value: counting?.countAvailable,
-      icon: <FiUserPlus />,
-      id: 'available-homemaids',
-      link: '/availablelist', // Link for Available Homemaids
-    },
-    {
-      title: lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : 'Booked',
-      value: counting?.countRelated,
-      icon: <FiGrid />,
-      id: 'booked',
-      link: '/bookedhomemaid', // Link for Booked (reusing bookedhomemaid)
-    },
-    {
-      title: lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : 'Total',
-      value: counting?.total,
-      icon: <FiGrid />,
-      id: 'total',
-      link: '/workerlist', // Link for Total
-    },
-  ],
-  [counting, lang]
-);
+  // Memoize widget data
+  const widgets = useMemo(
+    () => [
+      {
+        title: lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : 'New Reservations',
+        value: counting?.recent,
+        icon: <FiList />,
+        id: 'new-reservations',
+        link: '/bookedhomemaid',
+      },
+      {
+        title: lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids',
+        value: counting?.countAvailable,
+        icon: <FiUserPlus />,
+        id: 'available-homemaids',
+        link: '/availablelist',
+      },
+      {
+        title: lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : 'Booked',
+        value: counting?.countRelated,
+        icon: <FiList />,
+        id: 'booked',
+        link: '/bookedhomemaid',
+      },
+      {
+        title: lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : 'Total',
+        value: counting?.total,
+        icon: <FiList />,
+        id: 'total',
+        link: '/workerlist',
+      },
+    ],
+    [counting, lang]
+  );
 
-  // Animation variants for Framer Motion
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2,
+        staggerChildren: 0.1,
       },
     },
   };
@@ -151,7 +165,7 @@ const widgets = useMemo(
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === "ur" ? "rtl" : "ltr"}>
       <Toaster position="top-right" />
       {width > 600 ? <Sidebar /> : <Navbar />}
       <div className="flex-1 p-4 md:p-8 overflow-auto">
@@ -164,15 +178,27 @@ const widgets = useMemo(
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1
-            className={`text-2xl md:text-3xl font-bold ${
-              theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
-            }`}
-          >
-            {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : 'Welcome'}
-          </h1>
           <div className="flex items-center space-x-4">
-            {/* <motion.button
+            <img src="/logo.png" alt="Company Logo" className="h-10 w-10" />
+            <div>
+              <h1
+                className={`text-2xl md:text-3xl font-bold ${
+                  theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                }`}
+              >
+                {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : `Welcome, ${user?.name || 'User'}`}
+              </h1>
+              <p
+                className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                {/* Connecting Care */}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <motion.button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className={`p-2 rounded-full ${
                 theme === 'dark' ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-800'
@@ -184,20 +210,21 @@ const widgets = useMemo(
               data-tooltip-content={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-            </motion.button> */}
-            <Tooltip id="theme-tooltip" />
+            </motion.button>
+            <Tooltip id="theme-tooltip" className="bg-purple-600 text-white" />
             <Link href="/newemployer">
               <motion.button
-                className="flex items-center bg-gradient-to-r from-purple-500 to-purple-700 text-white px-5 py-2 rounded-lg hover:from-purple-600 hover:to-purple-800 transition"
+                className="flex items-center bg-gradient-to-r from-purple-500 to-purple-700 text-white px-6 py-3 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-800 transition"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 data-tooltip-id="add-homemaid-tooltip"
                 data-tooltip-content="Add a new homemaid to the system"
+                aria-describedby="add-homemaid-tooltip"
               >
-                <FiUserPlus className="mr-2" />
+                <FiUserPlus className="mr-2" aria-label="Add homemaid" />
                 {lang === 'fra' ? 'Ajouter une femme de ménage' : lang === 'ur' ? 'گھریلو ملازمہ شامل کریں۔' : 'Add Homemaid'}
               </motion.button>
-              <Tooltip id="add-homemaid-tooltip" />
+              <Tooltip id="add-homemaid-tooltip" className="bg-purple-600 text-white" />
             </Link>
           </div>
         </motion.div>
@@ -212,65 +239,66 @@ const widgets = useMemo(
             {lang === 'fra' ? 'Tableau de bord' : lang === 'ur' ? 'ڈیش بورڈ' : 'Dashboard Overview'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-  {isLoading
-    ? Array(4)
-        .fill()
-        .map((_, index) => (
-          <div
-            key={index}
-            className={`p-6 rounded-2xl shadow-lg ${
-              theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-            } animate-pulse`}
-          >
-            <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+            {isLoading
+              ? Array(4)
+                  .fill()
+                  .map((_, index) => (
+                    <div
+                      key={index}
+                      className={`p-6 rounded-2xl shadow-lg border ${
+                        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                      } animate-pulse h-32`}
+                    >
+                      <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                      <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+                    </div>
+                  ))
+              : widgets.map((item) => (
+                  <Link href={item.link} key={item.id}>
+                    <motion.div
+                      className={`p-6 rounded-2xl shadow-xl border bg-gradient-to-br h-32 ${
+                        theme === 'dark'
+                          ? 'from-gray-800 to-gray-900 border-gray-700'
+                          : 'from-white to-gray-50 border-gray-200'
+                      } flex items-center space-x-4 cursor-pointer`}
+                      variants={cardVariants}
+                      whileHover="hover"
+                      role="region"
+                      aria-labelledby={item.id}
+                      data-tooltip-id={item.id}
+                      data-tooltip-content={item.title}
+                      aria-label={`View ${item.title}`}
+                    >
+                      <div className="text-purple-500 text-4xl">{item.icon}</div>
+                      <div>
+                        <h3
+                          id={item.id}
+                          className={`text-lg font-semibold ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                          } hover:text-purple-600 transition`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p
+                          className={`text-3xl font-bold ${
+                            theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                          }`}
+                        >
+                          {item.value || 0}
+                        </p>
+                      </div>
+                      <Tooltip id={item.id} className="bg-purple-600 text-white" />
+                    </motion.div>
+                  </Link>
+                ))}
           </div>
-        ))
-    : widgets.map((item) => (
-        <Link href={item.link} key={item.id}>
-          <motion.div
-            className={`p-6 rounded-2xl shadow-xl bg-gradient-to-br ${
-              theme === 'dark'
-                ? 'from-gray-800 to-gray-900'
-                : 'from-white to-gray-50'
-            } flex items-center space-x-4 cursor-pointer`}
-            variants={cardVariants}
-            whileHover="hover"
-            role="region"
-            aria-labelledby={item.id}
-            data-tooltip-id={item.id}
-            data-tooltip-content={item.title}
-          >
-            <div className="text-purple-500 text-3xl">{item.icon}</div>
-            <div>
-              <h3
-                id={item.id}
-                className={`text-lg font-semibold ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}
-              >
-                {item.title}
-              </h3>
-              <p
-                className={`text-2xl font-bold ${
-                  theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
-                }`}
-              >
-                {item.value || 0}
-              </p>
-            </div>
-            <Tooltip id={item.id} />
-          </motion.div>
-        </Link>
-      ))}
-</div>
         </motion.div>
 
         {/* Messages Section */}
         <motion.div
           className="mt-10"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <h2
@@ -310,45 +338,76 @@ const widgets = useMemo(
                     key={reservation.id}
                     className={`flex justify-between p-4 border-b ${
                       theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-                    } hover:bg-gray-50 dark:hover:bg-gray-700 transition`}
+                    } hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer`}
                     role="listitem"
+                    onClick={() => router.push(`/messages/${reservation.id}`)}
+                    aria-label={`View message from ${reservation.name}`}
                   >
-                    <div>
-                      <p
-                        className={`font-semibold ${
-                          theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
-                        }`}
-                      >
-                        {reservation.name}
-                      </p>
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                        {reservation.title}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-semibold ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                          }`}
+                        >
+                          {reservation.name}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          } truncate w-48`}
+                        >
+                          {reservation.message || 'No message preview'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
                       <p
                         className={`text-sm ${
                           theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                         }`}
                       >
-                        {reservation.date}
+                        {getDate(reservation.date)}
                       </p>
-                    </div>
-                    <div
-                      className={`text-sm font-medium ${
-                        reservation.status === 'Confirmed'
-                          ? 'text-green-500'
-                          : 'text-yellow-500'
-                      }`}
-                    >
-                      {reservation.status}
+                      <div
+                        className={`text-sm font-medium px-2 py-1 rounded ${
+                          reservation.status === 'Confirmed'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {reservation.status}
+                      </div>
                     </div>
                   </li>
                 ))}
+                <div className="mt-4 text-right">
+                  <Link href="/messages">
+                    <button className="text-purple-600 hover:text-purple-800 font-medium">
+                      View All Messages
+                    </button>
+                  </Link>
+                </div>
               </ul>
             ) : (
-              <p
-                className={`text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                No messages available.
-              </p>
+              <div className="text-center py-8">
+                <FiMessageSquare className="mx-auto text-4xl text-gray-400 mb-4" />
+                <p
+                  className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  } mb-4`}
+                >
+                  No messages available.
+                </p>
+                <Link href="/messages">
+                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    Start a Conversation
+                  </button>
+                </Link>
+              </div>
             )}
           </div>
         </motion.div>
@@ -356,8 +415,8 @@ const widgets = useMemo(
         {/* Recent List Section */}
         <motion.div
           className="mt-10"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <h2
@@ -397,45 +456,67 @@ const widgets = useMemo(
                     key={reservation.id}
                     className={`flex justify-between p-4 border-b ${
                       theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-                    } hover:bg-gray-50 dark:hover:bg-gray-700 transition`}
+                    } hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer`}
                     role="listitem"
+                    onClick={() => router.push(`/reservations/${reservation.id}`)}
+                    aria-label={`View reservation for ${reservation.Name}`}
                   >
-                    <div>
-                      <p
-                        className={`font-semibold ${
-                          theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
-                        }`}
-                      >
-                        {reservation.Name}
-                      </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                        }`}
-                      >
-                        {getDate(reservation.NewOrder[0].createdAt)}
-                      </p>
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                        {reservation.Name[0]}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-semibold ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                          }`}
+                        >
+                          {reservation.Name}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}
+                        >
+                          {getDate(reservation.NewOrder[0].createdAt)}
+                        </p>
+                      </div>
                     </div>
                     <div
-                      className={`text-sm font-medium ${
+                      className={`text-sm font-medium px-2 py-1 rounded ${
                         reservation.NewOrder[0].bookingstatus === 'حجز جديد'
-                          ? 'text-green-500'
-                          : 'text-yellow-500'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
                       {reservation.NewOrder[0].bookingstatus}
                     </div>
                   </li>
                 ))}
+                <div className="mt-4 text-right">
+                  <Link href="/bookedhomemaid">
+                    <button className="text-purple-600 hover:text-purple-800 font-medium">
+                      View All Reservations
+                    </button>
+                  </Link>
+                </div>
               </ul>
             ) : (
-              <p
-                className={`text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                No recent reservations available.
-              </p>
+              <div className="text-center py-8">
+                <FiList className="mx-auto text-4xl text-gray-400 mb-4" />
+                <p
+                  className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  } mb-4`}
+                >
+                  No recent reservations available.
+                </p>
+                <Link href="/bookedhomemaid">
+                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    View All Reservations
+                  </button>
+                </Link>
+              </div>
             )}
           </div>
         </motion.div>

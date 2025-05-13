@@ -9,7 +9,7 @@
     background-position: 468px 0;
   }
 }
-
+/* components/Logo.module.css */
 .animate-pulse .bg-gray-200 {
   background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
   background-size: 800px 104px;
