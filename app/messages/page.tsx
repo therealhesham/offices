@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const translations = {
+const translations: Record<string, { title: string; inbox: string; sent: string; placeholder: string; send: string; you: string; noMessages: string }> = {
   en: {
     title: 'Messages',
     inbox: 'Inbox',
@@ -35,10 +35,18 @@ const translations = {
 
 const MessagesPage = () => {
   const [newMessage, setNewMessage] = useState('');
-  const [messages, setMessages] = useState([]);
+  interface Message {
+    id: string;
+    sender?: string;
+    title: string;
+    message: string;
+    createdAt: string;
+  }
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [activeTab, setActiveTab] = useState('inbox');
   const { language } = useLanguage();
-  const t = translations[language];
+  const t = translations[language] as typeof translations[string];
 
   // Set text direction only on the client side
   useEffect(() => {
@@ -91,7 +99,7 @@ const MessagesPage = () => {
         dir={language === 'ur' ? 'ltr' : 'rtl'}
       >
         <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">{t.title}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">{t?.title}</h2>
 
           {/* Tabs for Inbox and Sent */}
           <div className="flex border-b border-gray-200 mb-6">
@@ -103,7 +111,7 @@ const MessagesPage = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              {t.inbox}
+              {t?.inbox}
             </button>
             <button
               onClick={() => setActiveTab('sent')}
@@ -113,7 +121,7 @@ const MessagesPage = () => {
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              {t.sent}
+              {t?.sent}
             </button>
           </div>
 
@@ -121,7 +129,7 @@ const MessagesPage = () => {
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <p className="text-lg">{t.noMessages}</p>
+                <p className="text-lg">{t?.noMessages}</p>
               </div>
             ) : (
               messages.map((message) => (
@@ -131,7 +139,7 @@ const MessagesPage = () => {
                 >
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold">
-                      {message.sender?.[0]?.toUpperCase() || t.you[0]}
+                      {message.sender?.[0]?.toUpperCase() || t?.you[0]}
                     </div>
                   </div>
                   <div className="flex-1">
@@ -153,18 +161,18 @@ const MessagesPage = () => {
         <div className="w-full max-w-5xl mt-8">
           <textarea
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => setNewMessage(e.target?.value)}
             className="w-full p-4 border-none rounded-lg shadow-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 placeholder-gray-400"
-            rows="5"
-            placeholder={t.placeholder}
-            aria-label={t.placeholder}
+            rows={5}
+            placeholder={t?.placeholder}
+            aria-label={t?.placeholder}
           />
           <button
             onClick={handleSendMessage}
             className="mt-4 w-full p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none transition-colors duration-300"
-            aria-label={t.send}
+            aria-label={t?.send}
           >
-            {t.send}
+            {t?.send}
           </button>
         </div>
       </div>

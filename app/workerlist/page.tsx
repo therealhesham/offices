@@ -172,7 +172,7 @@ export default function Table() {
   }, []);
 
   const handleFilterChange = (e, column) => {
-    const value = e.target.value;
+    const value = e.target?.value;
     setFilters((prev) => ({
       ...prev,
       [column]: value,
@@ -208,7 +208,7 @@ export default function Table() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center text-3xl font-bold text-indigo-800 mb-6"
           >
-            {t.title}
+            {t?.title}
           </motion.h1>
 
           {/* Filter Section */}
@@ -216,17 +216,17 @@ export default function Table() {
             {[
               {
                 key: 'Name',
-                placeholder: t.searchName,
+                placeholder: t?.searchName,
                 icon: <MagnifyingGlassCircleIcon className="h-5 w-5" />,
               },
               {
                 key: 'Passportnumber',
-                placeholder: t.searchPassport,
+                placeholder: t?.searchPassport,
                 icon: <DocumentTextIcon className="h-5 w-5" />,
               },
               {
                 key: 'id',
-                placeholder: t.searchId,
+                placeholder: t?.searchId,
                 icon: <IdentificationIcon className="h-5 w-5" />,
               },
             ].map(({ key, placeholder, icon }) => (
@@ -256,7 +256,7 @@ export default function Table() {
                 aria-label="Reset filters"
               >
                 <ArrowPathIcon className="mr-2 h-5 w-5" />
-                {t.reset}
+                {t?.reset}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -266,7 +266,7 @@ export default function Table() {
                 aria-label="Search"
               >
                 <FolderIcon className="mr-2 h-5 w-5" />
-                {t.search}
+                {t?.search}
               </motion.button>
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function Table() {
                   className="col-span-full text-center py-10"
                 >
                   <FolderOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="text-gray-500 text-lg">{t.noResults}</p>
+                  <p className="text-gray-500 text-lg">{t?.noResults}</p>
                 </motion.div>
               ) : (
                 data.map((item) => (
@@ -296,26 +296,26 @@ export default function Table() {
                   >
                     <div className="space-y-3">
                       {[
-                        { label: t.workerId, value: item.id, icon: <IdentificationIcon className="h-5 w-5" /> },
-                        { label: t.workerName, value: item.Name, icon: <UserIcon className="h-5 w-5" /> },
-                        { label: t.phone, value: item.phone, icon: <PhoneIcon className="h-5 w-5" /> },
-                        { label: t.nationality, value: item.Nationalitycopy, icon: <GlobeAltIcon className="h-5 w-5" /> },
+                        { label: t?.workerId, value: item.id, icon: <IdentificationIcon className="h-5 w-5" /> },
+                        { label: t?.workerName, value: item.Name, icon: <UserIcon className="h-5 w-5" /> },
+                        { label: t?.phone, value: item.phone, icon: <PhoneIcon className="h-5 w-5" /> },
+                        { label: t?.nationality, value: item.Nationalitycopy, icon: <GlobeAltIcon className="h-5 w-5" /> },
                         {
-                          label: t.passportNumber,
+                          label: t?.passportNumber,
                           value: item.Passportnumber,
                           icon: <DocumentTextIcon className="h-5 w-5" />,
                         },
                         {
-                          label: t.passportStart,
-                          value: item.PassportStart || t.notAvailable,
+                          label: t?.passportStart,
+                          value: item.PassportStart || t?.notAvailable,
                           icon: <CalendarIcon className="h-5 w-5" />,
                         },
                         {
-                          label: t.passportEnd,
-                          value: item.PassportEnd || t.notAvailable,
+                          label: t?.passportEnd,
+                          value: item.PassportEnd || t?.notAvailable,
                           icon: <CalendarIcon className="h-5 w-5" />,
                         },
-                        { label: t.maritalStatus, value: item.maritalstatus, icon: <HeartIcon className="h-5 w-5" /> },
+                        { label: t?.maritalStatus, value: item.maritalstatus, icon: <HeartIcon className="h-5 w-5" /> },
                       ].map(({ label, value, icon }) => (
                         <div key={label} className="flex justify-between items-center">
                           <span className="font-semibold text-gray-700 flex items-center">
@@ -334,7 +334,7 @@ export default function Table() {
                       aria-label={`Edit profile for ${item.Name}`}
                     >
                       <PencilIcon className="w-5 h-5" />
-                      <span>{t.editProfile}</span>
+                      <span>{t?.editProfile}</span>
                     </motion.button>
                   </motion.div>
                 ))
@@ -364,7 +364,7 @@ export default function Table() {
                       d="M12 4v1m0 14v1m8-8h1m-14 0H4m15.071-4.071l-1.414 1.414M6.343 17.657l-1.414 1.414M17.657 6.343l1.414-1.414M4.929 19.071l1.414-1.414"
                     />
                   </svg>
-                  <span className="text-gray-600">{t.loading}</span>
+                  <span className="text-gray-600">{t?.loading}</span>
                 </motion.div>
               )}
             </div>
