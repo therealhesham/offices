@@ -96,8 +96,6 @@ export default function Table() {
   const [hasMore, setHasMore] = useState(true);
   const [width, setWidth] = useState(0);
 
-  const { language } = useLanguage();
-  const t = translations[language];
   const pageRef = useRef(1);
   const isFetchingRef = useRef(false);
   const router = useRouter();
@@ -108,9 +106,15 @@ export default function Table() {
     storage = localStorage.getItem('_item');
   }
 
+  const { language } = useLanguage();
+  // Fallback to English if language is invalid
+  const validLanguages = ['en', 'fra', 'ur'];
+  const t = validLanguages.includes(language) ? translations[language] : translations['en'];
+
   useEffect(() => {
     document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
   }, [language]);
+
 
   const fetchData = async () => {
     if (isFetchingRef.current || !hasMore) return;
