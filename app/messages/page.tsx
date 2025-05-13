@@ -46,13 +46,12 @@ const MessagesPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeTab, setActiveTab] = useState('inbox');
   const { language } = useLanguage();
-  const t = translations[language] as typeof translations[string];
+  // Fallback to English if language is invalid
+  const validLanguages = ['en', 'fra', 'ur'];
+  const t = validLanguages.includes(language) ? translations[language] : translations['en'];
 
-  // Set text direction only on the client side
   useEffect(() => {
-    // if (typeof window !== 'undefined') {
-      document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
-    // }
+    document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
   }, [language]);
 
   const fetchMessages = async () => {
@@ -80,8 +79,8 @@ const MessagesPage = () => {
         body: JSON.stringify({
           message: newMessage,
           type: 'sent',
-          title: 'New Message', // Add title
-          sender: 'Current User', // Add sender (or derive from auth)
+          title: 'New Message',
+          sender: 'Current User',
         }),
       });
       const data = await response.json();
@@ -91,45 +90,44 @@ const MessagesPage = () => {
       console.error('Error sending message:', error);
     }
   };
+
   return (
     <div className="flex flex-row min-h-screen bg-gradient-to-br from-purple-400 to-gray-200">
       <Sidebar />
       <div
         className="flex flex-col items-center p-6 w-full"
-        dir={language === 'ur' ? 'ltr' : 'rtl'}
+        dir={language === 'ur' ? 'rtl' : 'ltr'}
       >
         <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">{t?.title}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">{t.title}</h2>
 
-          {/* Tabs for Inbox and Sent */}
           <div className="flex border-b border-gray-200 mb-6">
             <button
               onClick={() => setActiveTab('inbox')}
-              className={`px-6 py-3 text-lg font-semibold transition-colors duration-300 ${
+              className={`px-6 py-3 text-lg cursor-pointer font-semibold transition-colors duration-300 ${
                 activeTab === 'inbox'
                   ? 'border-b-4 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              {t?.inbox}
+              {t.inbox}
             </button>
             <button
               onClick={() => setActiveTab('sent')}
-              className={`px-6 py-3 text-lg font-semibold transition-colors duration-300 ${
+              className={`px-6 py-3 text-lg font-semibold cursor-pointer transition-colors duration-300 ${
                 activeTab === 'sent'
                   ? 'border-b-4 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-blue-600'
               }`}
             >
-              {t?.sent}
+              {t.sent}
             </button>
           </div>
 
-          {/* Messages List */}
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <p className="text-lg">{t?.noMessages}</p>
+                <p className="text-lg">{t.noMessages}</p>
               </div>
             ) : (
               messages.map((message) => (
@@ -139,7 +137,7 @@ const MessagesPage = () => {
                 >
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold">
-                      {message.sender?.[0]?.toUpperCase() || t?.you[0]}
+                      {message.sender?.[0]?.toUpperCase() || t.you[0]}
                     </div>
                   </div>
                   <div className="flex-1">
@@ -157,22 +155,21 @@ const MessagesPage = () => {
           </div>
         </div>
 
-        {/* Message Input */}
         <div className="w-full max-w-5xl mt-8">
           <textarea
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target?.value)}
+            onChange={(e) => setNewMessage(e.target.value)}
             className="w-full p-4 border-none rounded-lg shadow-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 placeholder-gray-400"
             rows={5}
-            placeholder={t?.placeholder}
-            aria-label={t?.placeholder}
+            placeholder={t.placeholder}
+            aria-label={t.placeholder}
           />
           <button
             onClick={handleSendMessage}
             className="mt-4 w-full p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none transition-colors duration-300"
-            aria-label={t?.send}
+            aria-label={t.send}
           >
-            {t?.send}
+            {t.send}
           </button>
         </div>
       </div>
