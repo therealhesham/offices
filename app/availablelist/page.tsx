@@ -574,7 +574,7 @@ export default function Table() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
-                      window.open(`/admin/cvdetails/${selectedItem.id}`, '_blank');
+                      window.open(`/homemaid/${selectedItem.id}`, '_blank');
                       setSelectedItem(null);
                     }}
                     className="flex-1 flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300"

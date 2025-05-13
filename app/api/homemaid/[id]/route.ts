@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken'; // Example: Using jsonwebtoken for JWT decoding
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 const prisma = new PrismaClient();
 
 // Secret key for JWT (replace with your actual secret, ideally from environment variables)
@@ -31,7 +32,7 @@ async function getUserOffice(request: Request): Promise<string | null> {
     return decoded.office;
   } catch (error) {
     console.error('Error decoding JWT:', error);
-    return null;
+    return null
   }
 }
 
@@ -44,7 +45,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Get the authenticated user's office
     const userOffice = await getUserOffice(request);
     if (!userOffice) {
-      return NextResponse.json({ error: 'Unauthorized: Invalid or missing authentication' }, { status: 401 });
+        console.log('Redirecting to /login');
+        return NextResponse.redirect(new URL("/login", request.url));
+    
     }
 
     // Fetch the homemaid record

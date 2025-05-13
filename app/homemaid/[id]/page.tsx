@@ -60,9 +60,15 @@ const {language} = useLanguage()
   useEffect(() => {
     const fetchHomemaid = async () => {
       try {
-        const response = await axios.get(`/api/homemaid/${params.id}`);
-        setHomemaid(response.data);
-        setLoading(false);
+        const response = await fetch(`/api/homemaid/${params.id}`,{redirect:"follow"});
+      const jsonify = await response.json()
+        if (response.redirected) {
+            // Redirect to the URL specified in the response
+            router.push(response.url);
+            return;
+          }
+          setHomemaid(jsonify);
+          setLoading(false);
       } catch (err) {
         setError('Failed to load CV details');
         setLoading(false);
@@ -292,9 +298,9 @@ const {language} = useLanguage()
             </h2>
 
 
-            {homemaid.weeklyStatusId.length > 0 ? (
+            {homemaid.weeklyStatusId?.length > 0 ? (
               <ul className="list-disc pl-5">
-                {homemaid.weeklyStatusId.map((status) => (
+                {homemaid.weeklyStatusId?.map((status) => (
                   <li key={status.id}>
                     {status.status} - {new Date(status.date).toLocaleDateString()}
                   </li>
@@ -315,9 +321,9 @@ const {language} = useLanguage()
             <h2 className="text-2xl font-semibold text-blue-700 mb-4">
               Housing Details
             </h2>
-            {homemaid.inHouse.length > 0 ? (
+            {homemaid.inHouse?.length > 0 ? (
               <ul className="list-disc pl-5">
-                {homemaid.inHouse.map((housing) => (
+                {homemaid.inHouse?.map((housing) => (
                   <li key={housing.id}>
                     Entry Date:{' '}
                     {new Date(housing.houseentrydate).toLocaleDateString()}
@@ -344,9 +350,9 @@ const {language} = useLanguage()
             transition={{ delay: 1.2 }}
           >
             <h2 className="text-2xl font-semibold text-blue-700 mb-4">Orders</h2>
-            {homemaid.NewOrder.length > 0 ? (
+            {homemaid.NewOrder?.length > 0 ? (
               <ul className="list-disc pl-5">
-                {homemaid.NewOrder.map((order) => (
+                {homemaid.NewOrder?.map((order) => (
                   <li key={order.id}>
                     Client: {order.ClientName} - Status: {order.bookingstatus}
                   </li>
@@ -367,9 +373,9 @@ const {language} = useLanguage()
             <h2 className="text-2xl font-semibold text-blue-700 mb-4">
               Sessions
             </h2>
-            {homemaid.Session.length > 0 ? (
+            {homemaid.Session?.length > 0 ? (
               <ul className="list-disc pl-5">
-                {homemaid.Session.map((session) => (
+                {homemaid.Session?.map((session) => (
                   <li key={session.id}>
                     Reason: {session.reason} - Date:{' '}
                     {new Date(session.date).toLocaleDateString()}
