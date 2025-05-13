@@ -15,9 +15,10 @@ export default function Home() {
   const ISSERVER = typeof window === 'undefined';
   let storage, lang, user;
   if (!ISSERVER) {
+ 
     storage = localStorage.getItem('_item');
     lang = localStorage.getItem('language');
-    user = JSON.parse(localStorage.getItem('user') || '{}'); // Hypothetical user data
+    // user = JSON.parse(localStorage.getItem('user') || '{}'); // Hypothetical user data
   }
 
   const router = useRouter();
@@ -167,7 +168,7 @@ export default function Home() {
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === "ur" ? "rtl" : "ltr"}>
       <Toaster position="top-right" />
-      {width > 600 ? <Sidebar /> : <Navbar />}
+     <Sidebar/>
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         {/* Header Section */}
         <motion.div
@@ -186,7 +187,7 @@ export default function Home() {
                   theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
                 }`}
               >
-                {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : `Welcome, ${user?.name || 'User'}`}
+                {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : `Welcome, ${user?.office || 'User'}`}
               </h1>
               <p
                 className={`text-sm ${
@@ -307,7 +308,7 @@ export default function Home() {
             }`}
           >
             <FiMessageSquare className="mr-2 text-purple-500" />
-            {lang === 'fra' ? 'Messages' : lang === 'ur' ? 'پیغامات' : 'Messages'}
+            {lang === 'fra' ? 'Messages' : lang === 'ur' ? 'پیغامات' : 'New Messages'}
           </h2>
           <div
             className={`shadow-xl rounded-2xl p-6 ${
@@ -370,7 +371,7 @@ export default function Home() {
                           theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                         }`}
                       >
-                        {getDate(reservation.date)}
+                        {getDate(reservation.createdAt)}
                       </p>
                       <div
                         className={`text-sm font-medium px-2 py-1 rounded ${
@@ -523,4 +524,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
+} 

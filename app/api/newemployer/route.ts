@@ -87,6 +87,13 @@ console.log(verify.office)
       },
     });
 
+try {
+  
+    await prisma.notifications.create({data:{title:"عاملة جديدة تم اضافتها",message:`تم اضافة عاملة جديدة من قبل المكتب الخارجي ${newHomemaid.officeName}`}})
+
+  } catch (error) {
+  console.log(error)
+  }
     return new Response(JSON.stringify(newHomemaid), { status: 201 });
   } catch (error) {
     console.error('Error creating new homemaid:', error);

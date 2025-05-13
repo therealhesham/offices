@@ -60,13 +60,15 @@ const {language} = useLanguage()
   useEffect(() => {
     const fetchHomemaid = async () => {
       try {
-        const response = await fetch(`/api/homemaid/${params.id}`,{redirect:"follow"});
-      const jsonify = await response.json()
+        const response = await fetch(`/api/homemaid/${params.id}`);
         if (response.redirected) {
+            // alert(response.url)
             // Redirect to the URL specified in the response
             router.push(response.url);
             return;
           }
+          const jsonify = await response.json()
+    
           setHomemaid(jsonify);
           setLoading(false);
       } catch (err) {

@@ -25,9 +25,6 @@ async function getUserOffice(request: Request): Promise<string | null> {
       throw new Error('Invalid or missing token');
     }
     const decoded = jwt.verify(token?.value, "sss") as { office: string };
-    if (!decoded || !decoded.office) {  
-      return null;
-    }
 
     return decoded.office;
   } catch (error) {
@@ -44,10 +41,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Get the authenticated user's office
     const userOffice = await getUserOffice(request);
+
     if (!userOffice) {
-        console.log('Redirecting to /login');
-        return NextResponse.redirect(new URL("/login", request.url));
-    
+        // console.log("ss")
+        return    NextResponse.redirect(new URL("/login", request.url));
     }
 
     // Fetch the homemaid record
