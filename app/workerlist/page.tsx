@@ -329,21 +329,26 @@ export default function Table() {
                 },
               ].map(({ key, placeholder, icon }) => (
                 <div key={key} className="flex-1 relative group">
-                  <input
-                    type="text"
-                    value={filters[key]}
-                    onChange={(e) => handleFilterChange(e, key)}
-                    placeholder=" "
-                    aria-label={placeholder}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all peer"
-                  />
-                  <label className="absolute right-10 top-3 text-gray-500 transition-all duration-300 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:-top-6 peer-focus:text-sm peer-focus:text-indigo-600 group-hover:text-indigo-600">
-                    {placeholder}
-                  </label>
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-indigo-600">
-                    {icon}
-                  </div>
+                <input
+                  type="text"
+                  id={`filter-${key}`} // عشان نربطه مع label
+                  value={filters[key]}
+                  onChange={(e) => handleFilterChange(e, key)}
+                  placeholder=" "
+                  aria-label={placeholder}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all peer"
+                />
+                <label
+                  htmlFor={`filter-${key}`}
+                  className="absolute left-10 top-2.5 text-gray-500 text-sm transition-all duration-300 peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-600 group-hover:text-indigo-600"
+                >
+                  {placeholder}
+                </label>
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-indigo-600">
+                  {icon}
                 </div>
+              </div>
+              
               ))}
               <div className="flex gap-2">
                 <motion.button

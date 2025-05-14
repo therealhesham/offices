@@ -37,13 +37,12 @@ export async function GET(req: Request) {
   const type = searchParams.get('type') || 'inbox'; // Default to inbox
 
   try {
-    const whereClause = {isRead:false,
-      officeName,
+    const whereClause = {      officeName,
       ...(type === 'inbox' ? { type: 'inbox' } : { type: 'sent' }),
     };
 
     const messages = await prisma.officemssages.findMany({
-      where: whereClause,
+      where: {...whereClause,isRead:false},
       select: {
         id: true,
         title: true,
@@ -70,6 +69,33 @@ console.log(whereClause)
   }
 }
 
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    // Extract homemaid ID from params
+    const { searchParams } = new URL(request.url);
+ 
+    const id = searchParams.get('id');
+console.log(id)
+    // Fetch the homemaid record to check officeName
+    const updated = await prisma.officemssages.update({
+      where: { id:parseInt(id) },
+data:{isRead:true}
+    });
+console.log(updated)
+    if (!updated) {
+      return NextResponse.json({ error: 'message not found' }, { status: 404 });
+    }
+
+
+    return NextResponse.json(updated, { status: 201 });
+  } catch (error) {
+    console.error('Error updating homemaid:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } finally {
+    // Ensure Prisma client is disconnected to prevent connection leaks
+    await prisma.$disconnect();
+  }
+}
 // POST: Send a new message
 export async function POST(req: Request) {
   const officeName = await getOfficeNameFromToken();

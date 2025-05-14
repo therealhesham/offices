@@ -26,7 +26,7 @@ async function getOfficeNameFromToken() {
     throw new Error('Invalid token payload');
   } catch (error) {
     console.error('Token validation error:', error);
-    redirect('/login');
+    // redirect('/login');
   }
 }
 

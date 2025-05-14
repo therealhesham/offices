@@ -280,24 +280,34 @@ export default function Table() {
                 },
               ].map(({ key, label, icon }) => (
                 <div key={key} className="relative group">
-                  <input
-                    type="text"
-                    value={filters[key]}
-                    onChange={(e) => handleFilterChange(e, key)}
-                    placeholder=" "
-                    aria-label={label}
-                    className="w-full p-4 pl-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 bg-gray-50 peer"
-                  />
-                  <label className="absolute right-12 top-4 text-gray-500 transition-all duration-300 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:-top-6 peer-focus:text-sm peer-focus:text-indigo-600 group-hover:text-indigo-600">
-                    {label}
-                  </label>
-                  <motion.div
-                    whileHover={{ scale: 1.2 }}
-                    className="absolute left-3 top-4 text-gray-400 group-hover:text-indigo-600"
-                  >
-                    {icon}
-                  </motion.div>
-                </div>
+                <input
+                  type="text"
+                  id={`filter-${key}`}
+                  value={filters[key]}
+                  onChange={(e) => handleFilterChange(e, key)}
+                  placeholder=" "
+                  aria-label={label}
+                  className="w-full p-4 pl-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 bg-gray-50 peer"
+                />
+                
+                <label
+                  htmlFor={`filter-${key}`}
+                  className="absolute left-12 top-4 text-gray-500 transition-all duration-300
+                    peer-placeholder-shown:top-4 peer-placeholder-shown:text-base
+                    peer-focus:top-1 peer-focus:text-sm peer-focus:text-indigo-600
+                    group-hover:text-indigo-600"
+                >
+                  {label}
+                </label>
+                
+                <motion.div
+                  whileHover={{ scale: 1.2 }}
+                  className="absolute left-3 top-4 text-gray-400 group-hover:text-indigo-600"
+                >
+                  {icon}
+                </motion.div>
+              </div>
+              
               ))}
               <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
                 <motion.button

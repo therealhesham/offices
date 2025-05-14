@@ -326,24 +326,41 @@ export default function Table() {
               },
             ].map(({ key, label, icon }) => (
               <div key={key} className="relative group">
-                <input
-                  type="text"
-                  value={filters[key]}
-                  onChange={(e) => handleFilterChange(e, key)}
-                  placeholder=" "
-                  aria-label={label}
-                  className="w-full p-4 pl-12 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all duration-300 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 peer"
-                />
-                <label className="absolute right-12 top-4 text-gray-500 dark:text-gray-400 transition-all duration-300 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:-top-6 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                  {label}
-                </label>
-                <motion.div
-                  whileHover={{ scale: 1.2 }}
-                  className="absolute left-3 top-4 text-gray-400 dark:text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
-                >
-                  {icon}
-                </motion.div>
-              </div>
+              <input
+                type="text"
+                id={`filter-${key}`}
+                value={filters[key]}
+                onChange={(e) => handleFilterChange(e, key)}
+                placeholder=" "
+                aria-label={label}
+                className="w-full p-4 pl-12 border border-gray-200 dark:border-gray-600 rounded-lg 
+                           focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 
+                           focus:border-indigo-500 dark:focus:border-indigo-400 
+                           transition-all duration-300 bg-gray-50 dark:bg-gray-700 
+                           text-gray-900 dark:text-gray-100 peer"
+              />
+              
+              <label
+                htmlFor={`filter-${key}`}
+                className="absolute left-12 top-4 text-gray-500 dark:text-gray-400 transition-all duration-300
+                           peer-placeholder-shown:top-4 peer-placeholder-shown:text-base
+                           peer-focus:top-1 peer-focus:text-sm
+                           peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400
+                           group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+              >
+                {label}
+              </label>
+            
+              <motion.div
+                whileHover={{ scale: 1.2 }}
+                className="absolute left-3 top-4 text-gray-400 dark:text-gray-500 
+                           group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                aria-hidden="true"
+              >
+                {icon}
+              </motion.div>
+            </div>
+            
             ))}
             <div className="flex space-x-4">
               <motion.button

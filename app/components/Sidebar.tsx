@@ -31,8 +31,18 @@ export default function Sidebar() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const pathname = usePathname();
   const translation = useLanguage();
-
+  const checkCAr = async()=>{
+    const check = await fetch("/api/checklogin")
+  
+  if(check.redirected){
+    router.push("/login")
+    return
+  }
+  const awaiter = await check.json()
+  
+  }
   useEffect(() => {
+    checkCAr()
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState) {
       setIsCollapsed(JSON.parse(savedState));

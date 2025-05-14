@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUserPlus, FiMessageSquare, FiList, FiSun, FiMoon } from 'react-icons/fi';
+import { FiUserPlus, FiMessageSquare, FiList, FiSun, FiMoon, FiX } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
 import toast, { Toaster } from 'react-hot-toast';
 import { Tooltip } from 'react-tooltip';
@@ -11,23 +11,26 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/navigationbar';
+
 export default function Home() {
   const ISSERVER = typeof window === 'undefined';
   let storage, lang, user;
   if (!ISSERVER) {
- 
     storage = localStorage.getItem('_item');
     lang = localStorage.getItem('language');
-    // user = JSON.parse(localStorage.getItem('user') || '{}'); // Hypothetical user data
+    // user = JSON.parse(localStorage.getItem('user') || '{}');
   }
 
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const [messages, setMessages] = useState([]); // Placeholder for messages
+  const [messages, setMessages] = useState([]);
   const [dataList, setDataList] = useState([]);
   const [counting, setCounting] = useState({});
   const [width, setWidth] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  // State for modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
 
   // Handle window resize for responsive design
   useEffect(() => {
@@ -42,10 +45,10 @@ export default function Home() {
     document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
   }, [lang]);
 
-
+  // Fetch messages
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/messages?type=${activeTab}`, {
+      const response = await fetch(`/api/messages?type=inbox`, {
         method: 'GET',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       });
@@ -55,17 +58,14 @@ export default function Home() {
       console.error('Error fetching messages:', error);
     }
   };
-
+const dates = Date.now()
+const [ss,setSs]=useState(dates)
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
-      if (!storage) {
-        toast.error('Please log in to continue');
-        return router.push('/login');
-      }
       try {
         setIsLoading(true);
-        const [counterRes, recentRes,messagesList] = await Promise.all([
+        const [counterRes, recentRes, messagesList] = await Promise.all([
           fetch('/api/counter', {
             method: 'GET',
             headers: {
@@ -81,18 +81,21 @@ export default function Home() {
               Accept: 'application/json',
               'Content-Type': 'application/json',
             },
-          }),fetch(`/api/messages?type=inbox`, {
+          }),
+          fetch(`/api/recentmessages?type=inbox`, {
             method: 'GET',
             headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-          })
+          }),
         ]);
-        const [counters, recentList,messageing] = await Promise.all([
+        const [counters, recentList, messaging] = await Promise.all([
           counterRes.json(),
-          recentRes.json(), messagesList.json()
+          recentRes.json(),
+          messagesList.json(),
         ]);
         setCounting(counters);
         setDataList(recentList);
-        setMessages(messageing)
+        setMessages(messaging);
+        
         toast.success('Dashboard data loaded');
       } catch (error) {
         toast.error('Failed to load dashboard data');
@@ -101,8 +104,22 @@ export default function Home() {
       }
     };
     fetchData();
-  }, []);
-
+  }, [ss]);
+  const updateMessageStatus = async (id) => {
+    try {
+      const response = await fetch(`/api/recentmessages?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('message');
+      setSs(Date.now())
+      // toast.success('CV updated successfully!');
+      // router.push(`/homemaid/${id}`); // Redirect to CV list page
+    } catch (error) {
+console.log(error)
+      // toast.error('Error updating CV');
+    }
+  };
   // Format date for display
   const getDate = (date) => {
     const currentDate = new Date(date);
@@ -165,10 +182,38 @@ export default function Home() {
     hover: { scale: 1.05, transition: { duration: 0.2 } },
   };
 
+  // Modal animation variants
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } },
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } },
+  };
+
+  // Open modal with message details
+  const openModal = (message) => {
+    setSelectedMessage(message);
+    setIsModalOpen(true);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedMessage(null);
+  };
+
+  // Handle Esc key to close modal
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === "ur" ? "rtl" : "ltr"}>
-      <Toaster position="top-right" />
-     <Sidebar/>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === 'ur' ? 'rtl' : 'ltr'}>
+      {/* <Toaster position="top-right" /> */}
+      <Sidebar />
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         {/* Header Section */}
         <motion.div
@@ -341,7 +386,9 @@ export default function Home() {
                       theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
                     } hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer`}
                     role="listitem"
-                    onClick={() => router.push(`/messages/${reservation.id}`)}
+                    onClick={() => {
+                      updateMessageStatus(reservation?.id)
+                      openModal(reservation)}}
                     aria-label={`View message from ${reservation.name}`}
                   >
                     <div className="flex items-center space-x-3">
@@ -412,6 +459,92 @@ export default function Home() {
             )}
           </div>
         </motion.div>
+
+        {/* Modal for Message Details */}
+        <AnimatePresence>
+          {isModalOpen && selectedMessage && (
+            <motion.div
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModal}
+            >
+              <motion.div
+                className={`rounded-2xl p-6 max-w-md w-full ${
+                  theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-800'
+                }`}
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">
+                    {lang === 'fra' ? 'Détails du message' : lang === 'ur' ? 'پیغام کی تفصیلات' : 'Message Details'}
+                  </h3>
+                  <button
+                    onClick={closeModal}
+                    className={`p-2 rounded-full ${
+                      theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                    }`}
+                    aria-label="Close modal"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {lang === 'fra' ? 'De' : lang === 'ur' ? 'منجانب' : 'From'}
+                    </p>
+                    <p className="font-semibold">{selectedMessage.name}</p>
+                  </div>
+                  <div>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {lang === 'fra' ? 'Message' : lang === 'ur' ? 'پیغام' : 'Message'}
+                    </p>
+                    <p>{selectedMessage.message || 'No message content'}</p>
+                  </div>
+                  <div>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {lang === 'fra' ? 'Date' : lang === 'ur' ? 'تاریخ' : 'Date'}
+                    </p>
+                    <p>{getDate(selectedMessage.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {lang === 'fra' ? 'Statut' : lang === 'ur' ? 'حالت' : 'Status'}
+                    </p>
+                    <div
+                      className={`inline-block text-sm font-medium px-2 py-1 rounded ${
+                        selectedMessage.status === 'Confirmed'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {selectedMessage.status}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-2">
+                  <Link href={`/messages`}>
+                    <button className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                      {lang === 'fra' ? 'Voir plus' : lang === 'ur' ? 'مزید دیکھیں' : 'View More'}
+                    </button>
+                  </Link>
+                  <button
+                    onClick={closeModal}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+                  >
+                    {lang === 'fra' ? 'Fermer' : lang === 'ur' ? 'بند کریں' : 'Close'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Recent List Section */}
         <motion.div
@@ -524,4 +657,4 @@ export default function Home() {
       </div>
     </div>
   );
-} 
+}
