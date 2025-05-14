@@ -7,7 +7,7 @@ import { FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaInfoCircle, FaUpload }
 import AWS from 'aws-sdk';
 import { NewOrder, ArrivalList } from '@/app/lib/types';
 import Sidebar from '@/app/components/Sidebar';
-
+import { useLanguage } from '@/app/contexts/LanguageContext';
 const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');
 
 const s3 = new AWS.S3({
@@ -18,19 +18,187 @@ const s3 = new AWS.S3({
   signatureVersion: 'v4',
 });
 
-const stages = [
-  'الربط مع مساند',
-  'الربط مع مساند الخارجي',
-  'الربط مع المكتب الخارجي',
-  'الفحص الطبي',
-  'الربط مع الوكالة',
-  'التختيم في السفارة',
-  'حجز التذكرة',
-  'الاستلام',
-];
+// Define translations for stages and UI text
+const translations = {
+  en: {
+    stages: [
+      'Link with Musaned',
+      'Link with External Musaned',
+      'Link with External Office',
+      'Medical Check',
+      'Link with Agency',
+      'Embassy Sealing',
+      'Ticket Booking',
+      'Receiving',
+    ],
+    title: 'Order Timeline: {name}',
+    subtitle: 'Track the progress of your order in real-time',
+    progress: 'Progress: {percentage}%',
+    completed: 'Completed',
+    inProgress: 'In Progress',
+    pending: 'Pending',
+    uploadLabel: 'Upload Medical Check File',
+    uploadButton: 'Upload File',
+    uploading: 'Uploading...',
+    uploadSuccess: 'File uploaded successfully! ',
+    uploadError: 'Error uploading file. Please try again.',
+    viewFile: 'View File',
+    medicalFileUploaded: 'Medical file already uploaded. ',
+    medicalFileRestricted: 'Medical file upload is only allowed during current stage.',
+    orderNotFound: 'Order not found',
+    stageDetails: {
+      'Link with Musaned': {
+        'Internal Musaned Contract': 'Internal Musaned Contract',
+        'Date of Application': 'Date of Application',
+      },
+      'Link with External Musaned': {
+        'External Musaned Contract': 'External Musaned Contract',
+        'External Date Linking': 'External Date Linking',
+      },
+      'Link with External Office': {
+        'External Office Approval': 'External Office Approval',
+        'External Office File': 'External Office File',
+      },
+      'Medical Check': {
+        'Medical Check File': 'Medical Check File',
+      },
+      'Link with Agency': {
+        'Agency Date': 'Agency Date',
+      },
+      'Embassy Sealing': {
+        'Embassy Sealing': 'Embassy Sealing',
+      },
+      'Ticket Booking': {
+        'Ticket File': 'Ticket File',
+        'Booking Date': 'Booking Date',
+      },
+      'Receiving': {
+        'Receiving File': 'Receiving File',
+        'Delivery Date': 'Delivery Date',
+      },
+    },
+  },
+  fra: {
+    stages: [
+      'Lien avec Musaned',
+      'Lien avec Musaned externe',
+      'Lien avec le bureau externe',
+      'Examen médical',
+      'Lien avec l’agence',
+      'Scellage à l’ambassade',
+      'Réservation de billet',
+      'Réception',
+    ],
+    title: 'Chronologie de la commande : {name}',
+    subtitle: 'Suivez la progression de votre commande en temps réel',
+    progress: 'Progression : {percentage}%',
+    completed: 'Terminé',
+    inProgress: 'En cours',
+    pending: 'En attente',
+    uploadLabel: 'Télécharger le fichier d’examen médical',
+    uploadButton: 'Télécharger le fichier',
+    uploading: 'Téléchargement en cours...',
+    uploadSuccess: 'Fichier téléchargé avec succès ! ',
+    uploadError: 'Erreur lors du téléchargement du fichier. Veuillez réessayer.',
+    viewFile: 'Voir le fichier',
+    medicalFileUploaded: 'Fichier médical déjà téléchargé. ',
+    medicalFileRestricted: 'Le téléchargement du fichier médical n’est autorisé que pendant l’étape en cours.',
+    orderNotFound: 'Commande non trouvée',
+    stageDetails: {
+      'Lien avec Musaned': {
+        'Internal Musaned Contract': 'Contrat Musaned interne',
+        'Date of Application': 'Date de candidature',
+      },
+      'Lien avec Musaned externe': {
+        'External Musaned Contract': 'Contrat Musaned externe',
+        'External Date Linking': 'Date de liaison externe',
+      },
+      'Lien avec le bureau externe': {
+        'External Office Approval': 'Approbation du bureau externe',
+        'External Office File': 'Fichier du bureau externe',
+      },
+      'Examen médical': {
+        'Medical Check File': 'Fichier d’examen médical',
+      },
+      'Lien avec l’agence': {
+        'Agency Date': 'Date de l’agence',
+      },
+      'Scellage à l’ambassade': {
+        'Embassy Sealing': 'Scellage à l’ambassade',
+      },
+      'Réservation de billet': {
+        'Ticket File': 'Fichier de billet',
+        'Booking Date': 'Date de réservation',
+      },
+      'Réception': {
+        'Receiving File': 'Fichier de réception',
+        'Delivery Date': 'Date de livraison',
+      },
+    },
+  },
+  ur: {
+    stages: [
+      'مساند کے ساتھ ربط',
+      'خارجی مساند کے ساتھ ربط',
+      'خارجی دفتر کے ساتھ ربط',
+      'طبی معائنہ',
+      'ایجنسی کے ساتھ ربط',
+      'سفارتخانے میں مہر لگانا',
+      'ٹکٹ کی بکنگ',
+      'وصول کرنا',
+    ],
+    title: 'آرڈر ٹائم لائن: {name}',
+    subtitle: 'اپنے آرڈر کی پیشرفت کو حقیقی وقت میں ٹریک کریں',
+    progress: 'پیشرفت: {percentage}%',
+    completed: 'مکمل',
+    inProgress: 'جاری',
+    pending: 'زیر التواء',
+    uploadLabel: 'طبی معائنہ فائل اپ لوڈ کریں',
+    uploadButton: 'فائل اپ لوڈ کریں',
+    uploading: 'اپ لوڈ ہو رہا ہے...',
+    uploadSuccess: 'فائل کامیابی سے اپ لوڈ ہو گئی! ',
+    uploadError: 'فائل اپ لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔',
+    viewFile: 'فائل دیکھیں',
+    medicalFileUploaded: 'طبی فائل پہلے ہی اپ لوڈ کی جا چکی ہے۔ ',
+    medicalFileRestricted: 'طبی فائل اپ لوڈ صرف موجودہ مرحلے کے دوران کی جا سکتی ہے۔',
+    orderNotFound: 'آرڈر نہیں ملا',
+    stageDetails: {
+      'مساند کے ساتھ ربط': {
+        'Internal Musaned Contract': 'اندرونی مساند معاہدہ',
+        'Date of Application': 'درخواست کی تاریخ',
+      },
+      'خارجی مساند کے ساتھ ربط': {
+        'External Musaned Contract': 'خارجی مساند معاہدہ',
+        'External Date Linking': 'خارجی ربط کی تاریخ',
+      },
+      'خارجی دفتر کے ساتھ ربط': {
+        'External Office Approval': 'خارجی دفتر کی منظوری',
+        'External Office File': 'خارجی دفتر کی فائل',
+      },
+      'طبی معائنہ': {
+        'Medical Check File': 'طبی معائنہ فائل',
+      },
+      'ایجنسی کے ساتھ ربط': {
+        'Agency Date': 'ایجنسی کی تاریخ',
+      },
+      'سفارتخانے میں مہر لگانا': {
+        'Embassy Sealing': 'سفارتخانے میں مہر',
+      },
+      'ٹکٹ کی بکنگ': {
+        'Ticket File': 'ٹکٹ کی فائل',
+        'Booking Date': 'بکنگ کی تاریخ',
+      },
+      'وصول کرنا': {
+        'Receiving File': 'وصول کی فائل',
+        'Delivery Date': 'ترسیل کی تاریخ',
+      },
+    },
+  },
+};
 
 export default function TimelinePage() {
   const { id } = useParams();
+  const { language } = useLanguage(); // Get language from context
   const [order, setOrder] = useState<NewOrder | null>(null);
   const [arrival, setArrival] = useState<ArrivalList | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +206,18 @@ export default function TimelinePage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+
+  // Get language from local storage if context is not available
+  const ISSERVER = typeof window === 'undefined';
+  let lang = language;
+  if (!ISSERVER && !language) {
+    lang = localStorage.getItem('language') || 'en';
+  }
+
+  // Set RTL for Urdu
+  useEffect(() => {
+    document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
+  }, [lang]);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -107,16 +287,16 @@ export default function TimelinePage() {
   if (!order) {
     return (
       <div className="text-center text-red-500 text-xl font-semibold py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
-        Order not found
+        {translations[lang].orderNotFound}
       </div>
     );
   }
 
-  const currentStageIndex = order.bookingstatus ? stages.indexOf(order.bookingstatus) : -1;
-  const progressPercentage = ((currentStageIndex + 1) / stages.length) * 100;
+  const currentStageIndex = order.bookingstatus ? translations[lang].stages.indexOf(order.bookingstatus) : -1;
+  const progressPercentage = ((currentStageIndex + 1) / translations[lang].stages.length) * 100;
 
   return (
-    <div className="min-h-screen flex flex-column font-sans">
+    <div className="min-h-screen flex font-sans" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <Sidebar />
       <div className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
@@ -126,9 +306,9 @@ export default function TimelinePage() {
             className="text-center mb-12"
           >
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-              Order Timeline: <span className="text-indigo-600">{order.ClientName}</span>
+              {translations[lang].title.replace('{name}', order.ClientName)}
             </h1>
-            <p className="mt-4 text-lg text-gray-600">Track the progress of your order in real-time</p>
+            <p className="mt-4 text-lg text-gray-600">{translations[lang].subtitle}</p>
           </motion.div>
 
           <div className="mb-12">
@@ -136,7 +316,7 @@ export default function TimelinePage() {
               <div className="flex mb-2 items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-100">
-                    Progress: {Math.round(progressPercentage)}%
+                    {translations[lang].progress.replace('{percentage}', Math.round(progressPercentage).toString())}
                   </span>
                 </div>
               </div>
@@ -152,19 +332,19 @@ export default function TimelinePage() {
           </div>
 
           <div className="relative">
-            <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600"></div>
+            <div className={`absolute ${lang === 'ur' ? 'right-8' : 'left-8'} top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600`}></div>
 
-            {stages.map((stage, index) => {
+            {translations[lang].stages.map((stage, index) => {
               const isCompleted = index <= currentStageIndex;
               const isCurrent = index === currentStageIndex;
-              const stageDetails = getStageDetails(stage, arrival);
+              const stageDetails = getStageDetails(stage, arrival, lang);
               const isExpanded = expandedStage === stage;
-              const isUploadStage = stage === 'الفحص الطبي';
+              const isUploadStage = stage === translations[lang].stages[3]; // 'Medical Check' stage
 
               return (
                 <motion.div
                   key={stage}
-                  initial={{ opacity: 0, x: -50 }}
+                  initial={{ opacity: 0, x: lang === 'ur' ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.2, duration: 0.5 }}
                   className="mb-10 flex items-start"
@@ -193,7 +373,7 @@ export default function TimelinePage() {
                         <FaInfoCircle className="text-indigo-500 text-lg" />
                       </div>
                       <p className="text-gray-600 mt-2 font-medium">
-                        {isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
+                        {isCompleted ? translations[lang].completed : isCurrent ? translations[lang].inProgress : translations[lang].pending}
                       </p>
                       <AnimatePresence>
                         {isExpanded && (
@@ -207,7 +387,7 @@ export default function TimelinePage() {
                             {stageDetails &&
                               Object.entries(stageDetails).map(([key, value]) => (
                                 <p key={key} className="flex items-center space-x-2">
-                                  <span className="font-semibold text-indigo-600">{key}:</span>
+                                  <span className="font-semibold text-indigo-600">{translations[lang].stageDetails[stage][key]}:</span>
                                   <span>{value}</span>
                                 </p>
                               ))}
@@ -215,15 +395,15 @@ export default function TimelinePage() {
                               <div className="mt-4">
                                 {arrival?.medicalCheckFile ? (
                                   <p className="text-green-600 font-medium">
-                                    Medical file already uploaded.{' '}
+                                    {translations[lang].medicalFileUploaded}
                                     <a href={arrival.medicalCheckFile} target="_blank" rel="noopener noreferrer" className="underline text-indigo-600">
-                                      View File
+                                      {translations[lang].viewFile}
                                     </a>
                                   </p>
                                 ) : isCurrent ? (
                                   <>
                                     <label className="block text-sm font-medium text-gray-700">
-                                      Upload Medical Check File
+                                      {translations[lang].uploadLabel}
                                     </label>
                                     <input
                                       type="file"
@@ -238,23 +418,23 @@ export default function TimelinePage() {
                                         className={`mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${uploadStatus === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       >
                                         <FaUpload className="mr-2" />
-                                        {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload File'}
+                                        {uploadStatus === 'uploading' ? translations[lang].uploading : translations[lang].uploadButton}
                                       </button>
                                     )}
                                     {uploadStatus === 'success' && (
                                       <p className="mt-2 text-green-600">
-                                        File uploaded successfully!{' '}
+                                        {translations[lang].uploadSuccess}
                                         <a href={uploadedFileUrl || '#'} target="_blank" rel="noopener noreferrer" className="underline">
-                                          View File
+                                          {translations[lang].viewFile}
                                         </a>
                                       </p>
                                     )}
                                     {uploadStatus === 'error' && (
-                                      <p className="mt-2 text-red-600">Error uploading file. Please try again.</p>
+                                      <p className="mt-2 text-red-600">{translations[lang].uploadError}</p>
                                     )}
                                   </>
                                 ) : (
-                                  <p className="text-gray-500 italic">Medical file upload is only allowed during current stage.</p>
+                                  <p className="text-gray-500 italic">{translations[lang].medicalFileRestricted}</p>
                                 )}
                               </div>
                             )}
@@ -273,55 +453,55 @@ export default function TimelinePage() {
   );
 }
 
-const getStageDetails = (stage: string, arrival: ArrivalList | null) => {
+const getStageDetails = (stage: string, arrival: ArrivalList | null, lang: string) => {
   if (!arrival) return null;
 
   switch (stage) {
-    case 'الربط مع مساند':
+    case translations[lang].stages[0]: // 'Link with Musaned'
       return {
         'Internal Musaned Contract': arrival.InternalmusanedContract || 'N/A',
         'Date of Application': arrival.DateOfApplication?.toString() || 'N/A',
       };
-    case 'الربط مع مساند الخارجي':
+    case translations[lang].stages[1]: // 'Link with External Musaned'
       return {
         'External Musaned Contract': arrival.externalmusanedContract || 'N/A',
         'External Date Linking': arrival.ExternalDateLinking?.toString() || 'N/A',
       };
-    case 'الربط مع المكتب الخارجي':
+    case translations[lang].stages[2]: // 'Link with External Office'
       return {
         'External Office Approval': arrival.ExternalOFficeApproval?.toString() || 'N/A',
         'External Office File': arrival.externalOfficeFile ? (
           <a href={arrival.externalOfficeFile} target="_blank" rel="noopener noreferrer" className="underline">
-            View File
+            {translations[lang].viewFile}
           </a>
         ) : (
           'N/A'
         ),
       };
-    case 'الفحص الطبي':
+    case translations[lang].stages[3]: // 'Medical Check'
       return {
         'Medical Check File': arrival.medicalCheckFile ? (
           <a href={arrival.medicalCheckFile} target="_blank" rel="noopener noreferrer" className="underline">
-            View File
+            {translations[lang].viewFile}
           </a>
         ) : (
           'N/A'
         ),
       };
-    case 'الربط مع الوكالة':
+    case translations[lang].stages[4]: // 'Link with Agency'
       return {
         'Agency Date': arrival.AgencyDate?.toString() || 'N/A',
       };
-    case 'التختيم في السفارة':
+    case translations[lang].stages[5]: // 'Embassy Sealing'
       return {
         'Embassy Sealing': arrival.EmbassySealing?.toString() || 'N/A',
       };
-    case 'حجز التذكرة':
+    case translations[lang].stages[6]: // 'Ticket Booking'
       return {
         'Ticket File': arrival.ticketFile || 'N/A',
         'Booking Date': arrival.BookinDate?.toString() || 'N/A',
       };
-    case 'الاستلام':
+    case translations[lang].stages[7]: // 'Receiving'
       return {
         'Receiving File': arrival.receivingFile || 'N/A',
         'Delivery Date': arrival.DeliveryDate?.toString() || 'N/A',

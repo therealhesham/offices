@@ -81,10 +81,10 @@ const {language} = useLanguage()
   }, [params.id]);
 
   useEffect(() => {
-    fetchImageDate(homemaid?.Name || "");
+    fetchImageDateAirtable(homemaid?.Name || "");
   }, [homemaid]);
 
-  async function fetchImageDate(name: string) {
+  async function fetchImageDateAirtable(name: string) {
     const fetchData = await fetch("/api/getimagefromprisma/" + name, {
       method: "get",
     });
@@ -132,7 +132,7 @@ const {language} = useLanguage()
             <div className="flex items-center space-x-6">
               {image ? (
                 <Image
-                  src={image}
+                  src={image?.includes("airtable") ? image : homemaid.Picture?.url || ""}
                   alt="Profile"
                   width={120}
                   height={120}

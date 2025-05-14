@@ -28,6 +28,7 @@ const translations = {
     searchName: 'Search by name',
     searchPassport: 'Search by passport number',
     searchId: 'Search by worker ID',
+
     reset: 'Reset',
     search: 'Search',
     noResults: 'No results found',
@@ -321,12 +322,13 @@ export default function Table() {
                   key: 'Passportnumber',
                   placeholder: t.searchPassport,
                   icon: <DocumentTextIcon className="h-5 w-5" />,
-                },
-                {
-                  key: 'id',
-                  placeholder: t.searchId,
-                  icon: <IdentificationIcon className="h-5 w-5" />,
-                },
+                }
+                // ,
+                // {
+                //   key: 'id',
+                //   placeholder: t.searchId,
+                //   icon: <IdentificationIcon className="h-5 w-5" />,
+                // },
               ].map(({ key, placeholder, icon }) => (
                 <div key={key} className="flex-1 relative group">
                 <input
