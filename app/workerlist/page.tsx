@@ -297,7 +297,7 @@ export default function Table() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+      <div className="min-h-screen bg-gray-50">
         <div className={`flex ${width > 600 ? 'flex-row' : 'flex-col'}`}>
           <Sidebar />
           <div className="container mx-auto p-6 flex-1">

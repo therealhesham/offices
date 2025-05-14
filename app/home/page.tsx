@@ -592,7 +592,7 @@ console.log(error)
                       theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
                     } hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer`}
                     role="listitem"
-                    onClick={() => router.push(`/reservations/${reservation.id}`)}
+                    onClick={() => router.push(`/homemaid/${reservation.id}`)}
                     aria-label={`View reservation for ${reservation.Name}`}
                   >
                     <div className="flex items-center space-x-3">

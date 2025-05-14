@@ -92,7 +92,7 @@ const MessagesPage = () => {
   };
 
   return (
-    <div className="flex flex-row min-h-screen bg-gradient-to-br from-purple-400 to-gray-200">
+    <div className="flex flex-row min-h-screen bg-gray-50">
       <Sidebar />
       <div
         className="flex flex-col items-center p-6 w-full"
