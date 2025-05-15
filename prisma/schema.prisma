@@ -101,6 +101,8 @@ model offices {
   id                    Int       @id @default(autoincrement())
   office            String?    @db.VarChar(191) @unique
   password         String?    @db.VarChar(191)
+  url         String?    @db.VarChar(512)
+  
   office_id       String?    @db.VarChar(191)
 Country         String?    @db.VarChar(191)
 phoneNumber     String ?@db.VarChar(191)

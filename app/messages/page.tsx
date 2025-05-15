@@ -51,7 +51,8 @@ const MessagesPage = () => {
   const t = validLanguages.includes(language) ? translations[language] : translations['en'];
 
   useEffect(() => {
-    document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'ur' || language === 'ar' ? 'rtl' : 'ltr';
+
   }, [language]);
 
   const fetchMessages = async () => {

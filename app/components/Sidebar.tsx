@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MessageSquareIcon, SettingsIcon } from 'lucide-react';
+import { verify } from 'crypto';
 
 const ISSERVER = typeof window === 'undefined';
 let storage, lang;
@@ -30,6 +31,7 @@ export default function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const pathname = usePathname();
+  const [officeName,setOfficeName]=useState("")
   const translation = useLanguage();
   const checkCAr = async()=>{
     const check = await fetch("/api/checklogin")
@@ -39,7 +41,8 @@ export default function Sidebar() {
     return
   }
   const awaiter = await check.json()
-  
+  setOfficeName(awaiter?.office)
+// alert(awaiter?.name)
   }
   useEffect(() => {
     checkCAr()
@@ -83,13 +86,13 @@ router.push("/login")
   };
 
   const navItems = [
-    { name: translation.language === 'fra' ? "PAGE D'ACCUEIL" : translation.language === 'ur' ? "گھر کا صفحہ" : "Home", href: '/home', icon: HomeIcon },
-    { name: translation.language === 'fra' ? 'Réservée' : translation.language === 'ur' ? "بک کروایا" : "Booked Homemaid", href: '/bookedhomemaid', icon: CalendarIcon },
-    { name: translation.language === 'fra' ? 'Femmes de ménage disponibles' : translation.language === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids', href: '/availablelist', icon: UsersIcon },
-    { name: translation.language === 'fra' ? 'Liste complète ' : translation.language === 'ur' ? 'مکمل فہرست' : 'Full List', href: '/workerlist', icon: ListBulletIcon },
+    { name: translation.language === 'fra' ? "PAGE D'ACCUEIL" : translation.language === 'ur' ? "گھر کا صفحہ" :translation.language ==='ar'? "الصفحة الرئيسية" : "Home", href: '/home', icon: HomeIcon },
+    { name: translation.language === 'fra' ? 'Réservée' : translation.language === 'ur' ? "بک کروایا" :translation.language ==='ar'? "العاملات المحجوزة" : "Booked Homemaid", href: '/bookedhomemaid', icon: CalendarIcon },
+    { name: translation.language === 'fra' ? 'Femmes de ménage disponibles' : translation.language === 'ur' ? 'دستیاب گھریلو ملازمہ' :translation.language ==='ar'? "العاملات المتاحة" : 'Available Homemaids', href: '/availablelist', icon: UsersIcon },
+    { name: translation.language === 'fra' ? 'Liste complète ' : translation.language === 'ur' ? 'مکمل فہرست' :translation.language ==='ar'? "كل العاملات" : 'Full List', href: '/workerlist', icon: ListBulletIcon },
 
-    { name: translation.language === 'fra' ? 'paramètres' : translation.language === 'ur' ? 'ترتیبات' : 'settings', href: '/settings', icon: SettingsIcon },
-    { name: translation.language === 'fra' ? 'messages' : translation.language === 'ur' ? 'پیغامات' : 'messages', href: '/messages', icon: MessageSquareIcon },
+    { name: translation.language === 'fra' ? 'paramètres' : translation.language === 'ur' ? 'ترتیبات' :translation.language ==='ar'? "الاعدادات" : 'settings', href: '/settings', icon: SettingsIcon },
+    { name: translation.language === 'fra' ? 'messages' : translation.language === 'ur' ? 'پیغامات' : translation.language ==='ar'? "الرسائل" :'messages', href: '/messages', icon: MessageSquareIcon },
 
 
   ];
@@ -112,23 +115,27 @@ router.push("/login")
           initial={{ width: isCollapsed ? 64 : 256 }}
           animate={{ width: isCollapsed ? 64 : 256 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className={`fixed top-0 ${translation.language =="ur"? "right-0":"left-0"} h-screen bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg flex flex-col justify-between overflow-y-auto z-40 ${
+          className={`fixed top-0 ${translation.language === "ur" || translation.language === "ar" ? "right-0" : "left-0"} h-screen bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg flex flex-col justify-between overflow-y-auto z-40 ${
             isMobileOpen ? 'block md:block' : 'hidden md:block'
           }`}
         >
           <div className="p-4 flex items-center justify-between">
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.h1
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-2xl font-bold tracking-tight"
-                >
-                  Rawaes
-                </motion.h1>
-              )}
-            </AnimatePresence>
+          <AnimatePresence>
+  {!isCollapsed && (
+    <div className="flex flex-col items-center">
+      <motion.h1
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="text-sm font-bold tracking-tight"
+        style={{ whiteSpace: 'nowrap' }} 
+      >
+        {officeName}
+      </motion.h1>
+      <p className="text-xs text-gray-500">Powered By Rawaes</p>
+    </div>
+  )}
+</AnimatePresence>
             <button
               onClick={toggleSidebar}
               className="p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"

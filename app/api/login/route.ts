@@ -17,7 +17,7 @@ export async function POST(req) {
 
     if (fetching) {
       // Sign the JWT with office data (could be a subset of the office data, not the entire object)
-      const signing = jwt.sign({ id: fetching.id, office: fetching.office }, "sss", {
+      const signing = jwt.sign({ id: fetching.id, office: fetching.office ,url:fetching.url}, "sss", {
         expiresIn: '1h', // Optionally add expiration time
       });
 

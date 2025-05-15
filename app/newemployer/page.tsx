@@ -198,7 +198,6 @@ const FormPage = () => {
       const post = await newData.json();
       if (newData.status === 201) {
         setResponse(post);
-        alert("تم تقديم النموذج بنجاح!");
         setFormData({
           Name: "",
           Religion: "",

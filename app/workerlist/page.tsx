@@ -128,7 +128,9 @@ export default function Table() {
   const t = validLanguages.includes(language) ? translations[language] : translations['en'];
 
   useEffect(() => {
-    document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'ur' || language === 'ar' ? 'rtl' : 'ltr';
+
+
   }, [language]);
 
   const deleteHm = async (id: string) => {
@@ -305,7 +307,7 @@ export default function Table() {
             <motion.h1
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center text-3xl font-bold text-indigo-800 mb-6"
+              className="text-center text-3xl font-bold text-indigo-500 mb-6"
             >
               {t.title}
             </motion.h1>
@@ -434,7 +436,7 @@ export default function Table() {
                       <div className="mt-4 flex gap-2">
                         <motion.button
                           onClick={() => router.push(`/edit-cv/${item.id}`)}
-                          className="flex-1 px-4 py-2 flex flex-row justify-between bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-700 transition-all"
+                          className="flex-1 px-4 py-2 flex flex-row justify-between bg-indigo-600 to-purple-600 text-white rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-700 transition-all"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           aria-label={`Edit profile for ${item.Name}`}

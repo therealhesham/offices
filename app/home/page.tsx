@@ -11,16 +11,29 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/navigationbar';
+import { jwtDecode } from "jwt-decode";
 
 export default function Home() {
+  const [url,setUrl]=useState("")
   const ISSERVER = typeof window === 'undefined';
-  let storage, lang, user;
-  if (!ISSERVER) {
-    storage = localStorage.getItem('_item');
-    lang = localStorage.getItem('language');
-    // user = JSON.parse(localStorage.getItem('user') || '{}');
-  }
+  
+  let storage: string | null, lang: string | null, user: Record<string, unknown> | null;
+  lang = localStorage.getItem('language');
 
+
+  useEffect(() => {
+    if ( !ISSERVER) { // or !ISSERVER
+       storage = localStorage.getItem('_item');
+      // const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const payload = storage ? jwtDecode(storage) : null;
+      setUrl(payload?.url);
+    }
+  }, [lang]); // 
+  const [colorScheme, setColorScheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('colorScheme') || 'default';
+    }
+    return 'default'})
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [messages, setMessages] = useState([]);
@@ -28,7 +41,6 @@ export default function Home() {
   const [counting, setCounting] = useState({});
   const [width, setWidth] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  // State for modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
@@ -40,9 +52,9 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Set RTL for Urdu
+  // Set RTL for Arabic and Urdu
   useEffect(() => {
-    document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
+    document.documentElement.dir = lang === 'ar' || lang === 'ur' ? 'rtl' : 'ltr';
   }, [lang]);
 
   // Fetch messages
@@ -58,8 +70,10 @@ export default function Home() {
       console.error('Error fetching messages:', error);
     }
   };
-const dates = Date.now()
-const [ss,setSs]=useState(dates)
+
+  const dates = Date.now();
+  const [ss, setSs] = useState(dates);
+
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
@@ -95,7 +109,6 @@ const [ss,setSs]=useState(dates)
         setCounting(counters);
         setDataList(recentList);
         setMessages(messaging);
-        
         toast.success('Dashboard data loaded');
       } catch (error) {
         toast.error('Failed to load dashboard data');
@@ -105,6 +118,7 @@ const [ss,setSs]=useState(dates)
     };
     fetchData();
   }, [ss]);
+
   const updateMessageStatus = async (id) => {
     try {
       const response = await fetch(`/api/recentmessages?id=${id}`, {
@@ -112,18 +126,16 @@ const [ss,setSs]=useState(dates)
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('message');
-      setSs(Date.now())
-      // toast.success('CV updated successfully!');
-      // router.push(`/homemaid/${id}`); // Redirect to CV list page
+      setSs(Date.now());
     } catch (error) {
-console.log(error)
-      // toast.error('Error updating CV');
+      console.log(error);
     }
   };
+
   // Format date for display
   const getDate = (date) => {
     const currentDate = new Date(date);
-    return currentDate.toLocaleDateString('en-GB', {
+    return currentDate.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -134,28 +146,58 @@ console.log(error)
   const widgets = useMemo(
     () => [
       {
-        title: lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : 'New Reservations',
+        title:
+          lang === 'fra'
+            ? 'Nouvelles réservations'
+            : lang === 'ur'
+            ? 'نئے تحفظات'
+            : lang === 'ar'
+            ? 'الحجوزات الجديدة'
+            : 'New Reservations',
         value: counting?.recent,
         icon: <FiList />,
         id: 'new-reservations',
         link: '/bookedhomemaid',
       },
       {
-        title: lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : 'Available Homemaids',
+        title:
+         
+
+ lang === 'fra'
+            ? 'Femmes de ménage disponibles'
+            : lang === 'ur'
+            ? 'دستیاب گھریلو ملازمہ'
+            : lang === 'ar'
+            ? 'الخادمات المتاحة'
+            : 'Available Homemaids',
         value: counting?.countAvailable,
         icon: <FiUserPlus />,
         id: 'available-homemaids',
         link: '/availablelist',
       },
       {
-        title: lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : 'Booked',
+        title:
+          lang === 'fra'
+            ? 'Réservée'
+            : lang === 'ur'
+            ? 'بک کروایا'
+            : lang === 'ar'
+            ? 'محجوز'
+            : 'Booked',
         value: counting?.countRelated,
         icon: <FiList />,
         id: 'booked',
         link: '/bookedhomemaid',
       },
       {
-        title: lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : 'Total',
+        title:
+          lang === 'fra'
+            ? 'Total'
+            : lang === 'ur'
+            ? 'کل'
+            : lang === 'ar'
+            ? 'الإجمالي'
+            : 'Total',
         value: counting?.total,
         icon: <FiList />,
         id: 'total',
@@ -211,8 +253,7 @@ console.log(error)
   }, []);
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === 'ur' ? 'rtl' : 'ltr'}>
-      {/* <Toaster position="top-right" /> */}
+    <div className={`min-h-screen scheme-${colorScheme}   ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === 'ar' || lang === 'ur' ? 'rtl' : 'ltr'}>
       <Sidebar />
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         {/* Header Section */}
@@ -225,14 +266,14 @@ console.log(error)
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-            <img src="/logo.png" alt="Company Logo" className="h-10 w-10" />
+            <img src={url ? url :""} alt="Company Logo" className="h-10 w-10" />
             <div>
               <h1
                 className={`text-2xl md:text-3xl font-bold ${
                   theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
                 }`}
               >
-                {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : `Welcome, ${user?.office || 'User'}`}
+                {lang === 'fra' ? 'Bienvenu' : lang === 'ur' ? 'خوش امديد' : lang === 'ar' ? 'مرحبًا' : 'Welcome'}
               </h1>
               <p
                 className={`text-sm ${
@@ -244,31 +285,31 @@ console.log(error)
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {/* <motion.button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`p-2 rounded-full ${
-                theme === 'dark' ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-800'
-              }`}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Toggle theme"
-              data-tooltip-id="theme-tooltip"
-              data-tooltip-content={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-            </motion.button> */}
-            <Tooltip id="theme-tooltip" className="bg-purple-600 text-white" />
             <Link href="/newemployer">
               <motion.button
-                className="flex items-center bg-gradient-to-r from-purple-500 to-purple-700 text-white px-6 py-3 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-800 transition"
+                className="flex items-center  bg-purple-600  text-white px-6 py-3 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-800 transition"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 data-tooltip-id="add-homemaid-tooltip"
-                data-tooltip-content="Add a new homemaid to the system"
+                data-tooltip-content={
+                  lang === 'fra'
+                    ? 'Ajouter une femme de ménage au système'
+                    : lang === 'ur'
+                    ? 'نظام میں نئی گھریلو ملازمہ شامل کریں'
+                    : lang === 'ar'
+                    ? 'إضافة خادمة جديدة إلى النظام'
+                    : 'Add a new homemaid to the system'
+                }
                 aria-describedby="add-homemaid-tooltip"
               >
                 <FiUserPlus className="mr-2" aria-label="Add homemaid" />
-                {lang === 'fra' ? 'Ajouter une femme de ménage' : lang === 'ur' ? 'گھریلو ملازمہ شامل کریں۔' : 'Add Homemaid'}
+                {lang === 'fra'
+                  ? 'Ajouter une femme de ménage'
+                  : lang === 'ur'
+                  ? 'گھریلو ملازمہ شامل کریں'
+                  : lang === 'ar'
+                  ? 'إضافة خادمة'
+                  : 'Add Homemaid'}
               </motion.button>
               <Tooltip id="add-homemaid-tooltip" className="bg-purple-600 text-white" />
             </Link>
@@ -282,7 +323,13 @@ console.log(error)
               theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
             }`}
           >
-            {lang === 'fra' ? 'Tableau de bord' : lang === 'ur' ? 'ڈیش بورڈ' : 'Dashboard Overview'}
+            {lang === 'fra'
+              ? 'Tableau de bord'
+              : lang === 'ur'
+              ? 'ڈیش بورڈ'
+              : lang === 'ar'
+              ? '  لوحة التحكم'
+              : 'Dashboard Overview'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {isLoading
@@ -319,7 +366,7 @@ console.log(error)
                       <div>
                         <h3
                           id={item.id}
-                          className={`text-lg font-semibold ${
+                          className={`text-md font-semibold text-nowrap   ${
                             theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
                           } hover:text-purple-600 transition`}
                         >
@@ -353,7 +400,13 @@ console.log(error)
             }`}
           >
             <FiMessageSquare className="mr-2 text-purple-500" />
-            {lang === 'fra' ? 'Messages' : lang === 'ur' ? 'پیغامات' : 'New Messages'}
+            {lang === 'fra'
+              ? 'Messages'
+              : lang === 'ur'
+              ? 'پیغامات'
+              : lang === 'ar'
+              ? 'الرسائل الجديدة'
+              : 'New Messages'}
           </h2>
           <div
             className={`shadow-xl rounded-2xl p-6 ${
@@ -387,8 +440,9 @@ console.log(error)
                     } hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer`}
                     role="listitem"
                     onClick={() => {
-                      updateMessageStatus(reservation?.id)
-                      openModal(reservation)}}
+                      updateMessageStatus(reservation?.id);
+                      openModal(reservation);
+                    }}
                     aria-label={`View message from ${reservation.name}`}
                   >
                     <div className="flex items-center space-x-3">
@@ -408,7 +462,7 @@ console.log(error)
                             theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                           } truncate w-48`}
                         >
-                          {reservation.message || 'No message preview'}
+                          {reservation.message || (lang === 'ar' ? 'لا يوجد معاينة للرسالة' : 'No message preview')}
                         </p>
                       </div>
                     </div>
@@ -427,7 +481,21 @@ console.log(error)
                             : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
-                        {reservation.status}
+                        {reservation.status === 'Confirmed'
+                          ? lang === 'ar'
+                            ? 'مؤكد'
+                            : lang === 'fra'
+                            ? 'Confirmé'
+                            : lang === 'ur'
+                            ? 'تصدیق شدہ'
+                            : 'Confirmed'
+                          : lang === 'ar'
+                          ? 'قيد الانتظار'
+                          : lang === 'fra'
+                          ? 'En attente'
+                          : lang === 'ur'
+                          ? 'زیر التوا'
+                          : 'Pending'}
                       </div>
                     </div>
                   </li>
@@ -435,7 +503,13 @@ console.log(error)
                 <div className="mt-4 text-right">
                   <Link href="/messages">
                     <button className="text-purple-600 hover:text-purple-800 font-medium">
-                      View All Messages
+                      {lang === 'fra'
+                        ? 'Voir tous les messages'
+                        : lang === 'ur'
+                        ? 'تمام پیغامات دیکھیں'
+                        : lang === 'ar'
+                        ? 'عرض جميع الرسائل'
+                        : 'View All Messages'}
                     </button>
                   </Link>
                 </div>
@@ -448,11 +522,23 @@ console.log(error)
                     theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                   } mb-4`}
                 >
-                  No messages available.
+                  {lang === 'fra'
+                    ? 'Aucun message disponible.'
+                    : lang === 'ur'
+                    ? 'کوئی پیغامات موجود نہیں ہیں۔'
+                    : lang === 'ar'
+                    ? 'لا توجد رسائل متاحة.'
+                    : 'No messages available.'}
                 </p>
                 <Link href="/messages">
                   <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                    Start a Conversation
+                    {lang === 'fra'
+                      ? 'Démarrer une conversation'
+                      : lang === 'ur'
+                      ? 'گفتگو شروع کریں'
+                      : lang === 'ar'
+                      ? 'بدء محادثة'
+                      : 'Start a Conversation'}
                   </button>
                 </Link>
               </div>
@@ -482,7 +568,13 @@ console.log(error)
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-semibold">
-                    {lang === 'fra' ? 'Détails du message' : lang === 'ur' ? 'پیغام کی تفصیلات' : 'Message Details'}
+                    {lang === 'fra'
+                      ? 'Détails du message'
+                      : lang === 'ur'
+                      ? 'پیغام کی تفصیلات'
+                      : lang === 'ar'
+                      ? 'تفاصيل الرسالة'
+                      : 'Message Details'}
                   </h3>
                   <button
                     onClick={closeModal}
@@ -497,25 +589,52 @@ console.log(error)
                 <div className="space-y-4">
                   <div>
                     <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {lang === 'fra' ? 'De' : lang === 'ur' ? 'منجانب' : 'From'}
+                      {lang === 'fra'
+                        ? 'De'
+                        : lang === 'ur'
+                        ? 'منجانب'
+                        : lang === 'ar'
+                        ? 'من'
+                        : 'From'}
                     </p>
                     <p className="font-semibold">{selectedMessage.name}</p>
                   </div>
                   <div>
                     <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {lang === 'fra' ? 'Message' : lang === 'ur' ? 'پیغام' : 'Message'}
+                      {lang === 'fra'
+                        ? 'Message'
+                        : lang === 'ur'
+                        ? 'پیغام'
+                        : lang === 'ar'
+                        ? 'الرسالة'
+                        : 'Message'}
                     </p>
-                    <p>{selectedMessage.message || 'No message content'}</p>
+                    <p>
+                      {selectedMessage.message ||
+                        (lang === 'ar' ? 'لا يوجد محتوى للرسالة' : 'No message content')}
+                    </p>
                   </div>
                   <div>
                     <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {lang === 'fra' ? 'Date' : lang === 'ur' ? 'تاریخ' : 'Date'}
+                      {lang === 'fra'
+                        ? 'Date'
+                        : lang === 'ur'
+                        ? 'تاریخ'
+                        : lang === 'ar'
+                        ? 'التاريخ'
+                        : 'Date'}
                     </p>
                     <p>{getDate(selectedMessage.createdAt)}</p>
                   </div>
                   <div>
                     <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {lang === 'fra' ? 'Statut' : lang === 'ur' ? 'حالت' : 'Status'}
+                      {lang === 'fra'
+                        ? 'Statut'
+                        : lang === 'ur'
+                        ? 'حالت'
+                        : lang === 'ar'
+                        ? 'الحالة'
+                        : 'Status'}
                     </p>
                     <div
                       className={`inline-block text-sm font-medium px-2 py-1 rounded ${
@@ -524,21 +643,47 @@ console.log(error)
                           : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {selectedMessage.status}
+                      {selectedMessage.status === 'Confirmed'
+                        ? lang === 'ar'
+                          ? 'مؤكد'
+                          : lang === 'fra'
+                          ? 'Confirmé'
+                          : lang === 'ur'
+                          ? 'تصدیق شدہ'
+                          : 'Confirmed'
+                        : lang === 'ar'
+                        ? 'قيد الانتظار'
+                        : lang === 'fra'
+                        ? 'En attente'
+                        : lang === 'ur'
+                        ? 'زیر التوا'
+                        : 'Pending'}
                     </div>
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">
                   <Link href={`/messages`}>
                     <button className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-                      {lang === 'fra' ? 'Voir plus' : lang === 'ur' ? 'مزید دیکھیں' : 'View More'}
+                      {lang === 'fra'
+                        ? 'Voir plus'
+                        : lang === 'ur'
+                        ? 'مزید دیکھیں'
+                        : lang === 'ar'
+                        ? 'عرض المزيد'
+                        : 'View More'}
                     </button>
                   </Link>
                   <button
                     onClick={closeModal}
                     className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
                   >
-                    {lang === 'fra' ? 'Fermer' : lang === 'ur' ? 'بند کریں' : 'Close'}
+                    {lang === 'fra'
+                      ? 'Fermer'
+                      : lang === 'ur'
+                      ? 'بند کریں'
+                      : lang === 'ar'
+                      ? 'إغلاق'
+                      : 'Close'}
                   </button>
                 </div>
               </motion.div>
@@ -559,7 +704,13 @@ console.log(error)
             }`}
           >
             <FiList className="mr-2 text-purple-500" />
-            {lang === 'fra' ? 'Liste récente' : lang === 'ur' ? 'نئے تحفظات' : 'Recent List'}
+            {lang === 'fra'
+              ? 'Liste récente'
+              : lang === 'ur'
+              ? 'نئے تحفظات'
+              : lang === 'ar'
+              ? 'القائمة الحديثة'
+              : 'Recent List'}
           </h2>
           <div
             className={`shadow-xl rounded-2xl p-6 ${
@@ -623,14 +774,34 @@ console.log(error)
                           : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {reservation.NewOrder[0].bookingstatus}
+                      {reservation.NewOrder[0].bookingstatus === 'حجز جديد'
+                        ? lang === 'ar'
+                          ? 'حجز جديد'
+                          : lang === 'fra'
+                          ? 'Nouvelle réservation'
+                          : lang === 'ur'
+                          ? 'نیا تحفظ'
+                          : 'New Booking'
+                        : lang === 'ar'
+                        ? 'قيد الانتظار'
+                        : lang === 'fra'
+                        ? 'En attente'
+                        : lang === 'ur'
+                        ? 'زیر التوا'
+                        : 'Pending'}
                     </div>
                   </li>
                 ))}
                 <div className="mt-4 text-right">
                   <Link href="/bookedhomemaid">
                     <button className="text-purple-600 hover:text-purple-800 font-medium">
-                      View All Reservations
+                      {lang === 'fra'
+                        ? 'Voir toutes les réservations'
+                        : lang === 'ur'
+                        ? 'تمام تحفظات دیکھیں'
+                        : lang === 'ar'
+                        ? 'عرض جميع الحجوزات'
+                        : 'View All Reservations'}
                     </button>
                   </Link>
                 </div>
@@ -643,11 +814,23 @@ console.log(error)
                     theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                   } mb-4`}
                 >
-                  No recent reservations available.
+                  {lang === 'fra'
+                    ? 'Aucune réservation récente disponible.'
+                    : lang === 'ur'
+                    ? 'کوئی حالیہ تحفظات موجود نہیں ہیں۔'
+                    : lang === 'ar'
+                    ? 'لا توجد حجوزات حديثة متاحة.'
+                    : 'No recent reservations available.'}
                 </p>
                 <Link href="/bookedhomemaid">
                   <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                    View All Reservations
+                    {lang === 'fra'
+                      ? 'Voir toutes les réservations'
+                      : lang === 'ur'
+                      ? 'تمام تحفظات دیکھیں'
+                      : lang === 'ar'
+                      ? 'عرض جميع الحجوزات'
+                      : 'View All Reservations'}
                   </button>
                 </Link>
               </div>

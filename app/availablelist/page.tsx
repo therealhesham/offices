@@ -128,10 +128,14 @@ export default function Table() {
   const isFetchingRef = useRef(false);
   const debounceTimeoutRef = useRef(null);
   const router = useRouter();
-
+  const [colorScheme, setColorScheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('colorScheme') || 'default';
+    }
+    return 'default'})
   // Set document direction for RTL languages
   useEffect(() => {
-    document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'ur' || language === 'ar' ? 'rtl' : 'ltr';
   }, [language]);
 
   // Fetch data with error handling and token validation
@@ -280,12 +284,12 @@ export default function Table() {
 
   return (
     <div
-      className={`min-h-screen font-sans transition-colors duration-300 ${
+      className={`min-h-screen font-sans transition-colors duration-300  scheme-${colorScheme} ${
         width > 768 ? 'flex flex-row' : 'flex flex-col'
       } ${darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-gray-50 to-indigo-50'}`}
     >
       <Sidebar />
-      <div className="flex-1 p-4 md:p-8 overflow-auto relative">
+      <div className={`flex-1 p-4 md:p-8 overflow-auto relative `}>
         {/* Dark Mode Toggle */}
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -377,7 +381,7 @@ export default function Table() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => fetchData(true)}
-                className="flex-1 flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white py-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300"
+                className="flex-1 flex items-center justify-center bg-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white py-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300"
                 aria-label={t.search}
               >
                 <StarIcon className="h-5 w-5 mr-2" />
@@ -488,7 +492,7 @@ export default function Table() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedItem(item)}
-                  className="mt-6 w-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300"
+                  className="mt-6 w-full flex items-center justify-center bg-indigo-600 dark:from-indigo-500 dark:to-purple-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300"
                   aria-label={`${t.viewDetails} for ${item.Name}`}
                 >
                   <EyeIcon className="h-5 w-5 mr-2" />

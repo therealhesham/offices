@@ -241,7 +241,7 @@ export default function Table() {
 
   // Set document direction for RTL languages
   useEffect(() => {
-    document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'ur'  ||language === 'ar'  ? 'rtl' : 'ltr';
   }, [language]);
 
   return (
