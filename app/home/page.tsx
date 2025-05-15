@@ -1,4 +1,5 @@
-'use client';
+'use client'
+
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,18 +18,35 @@ export default function Home() {
   const [url,setUrl]=useState("")
   const ISSERVER = typeof window === 'undefined';
   
-  let storage: string | null, lang: string | null, user: Record<string, unknown> | null;
-  lang = localStorage.getItem('language');
+  // let storage: string | null , lang: string | null, user: Record<string, unknown> | null;
+  // lang = localStorage.getItem('language');
 
+  // function name() {
+  //   if (!ISSERVER) { // or 
+  //     storage = localStorage.getItem('_item');
+
+  //    // const user = JSON.parse(localStorage.getItem('user') || '{}');
+  //    const payload = storage ? jwtDecode(storage) : null;
+  //    setUrl(payload?.url);
+  //  }    
+  // }
+  let storage, lang, user;
+  if (!ISSERVER) {
+    storage = localStorage.getItem('_item');
+    lang = localStorage.getItem('language');
+    // user = JSON.parse(localStorage.getItem('user') || '{}');
+  }
 
   useEffect(() => {
+    // name()
+
     if ( !ISSERVER) { // or !ISSERVER
        storage = localStorage.getItem('_item');
       // const user = JSON.parse(localStorage.getItem('user') || '{}');
       const payload = storage ? jwtDecode(storage) : null;
       setUrl(payload?.url);
     }
-  }, [lang]); // 
+  }, []); // 
   const [colorScheme, setColorScheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('colorScheme') || 'default';
