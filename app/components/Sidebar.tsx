@@ -237,7 +237,7 @@ router.push("/login")
 
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-30"
+          className="fixed inset-0 bg-none md:hidden z-30"
           onClick={toggleMobileSidebar}
         ></div>
       )}

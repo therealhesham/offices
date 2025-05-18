@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/navigationbar';
 import { jwtDecode } from "jwt-decode";
+import ChatWidget from '@/components/chat_widget';
 
 export default function Home() {
   const [url,setUrl]=useState("")
@@ -284,7 +285,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-            <img src={url ? url :""} alt="Company Logo" className="h-10 w-10" />
+            <img src={url ? url :""} alt="Company Logo" className="h-10 rounded-md w-10" />
             <div>
               <h1
                 className={`text-2xl md:text-3xl font-bold ${
@@ -856,6 +857,7 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+<ChatWidget/>
     </div>
   );
 }
