@@ -28,11 +28,12 @@ export default function Home() {
     storage = localStorage.getItem('_item');
     lang = localStorage.getItem('language');
   }
-
+const[officeName,setOfficeName]=useState("")
   useEffect(() => {
     if (!ISSERVER) {
       storage = localStorage.getItem('_item');
       const payload = storage ? jwtDecode(storage) : null;
+      setOfficeName(payload.office)
       setUrl(payload?.url);
     }
   }, []);
@@ -281,7 +282,14 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-            <img src={url ? url : ""} alt="Company Logo" className="h-10 rounded-md w-10" />
+          {url ? (
+  <img src={url} alt="Company Logo" className="h-10 w-10 rounded-full object-cover" />
+) : (
+  <span className="flex h-10 w-10 items-center justify-center bg-indigo-500 text-white text-lg font-semibold rounded-full">
+    {officeName[0]}
+  </span>
+)}
+
             <div>
               <h1
                 className={`text-2xl md:text-3xl font-bold ${
