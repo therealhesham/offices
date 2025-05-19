@@ -17,7 +17,7 @@ const header = await headers();
 
 const token = header.get("authorization")?.split(' ')[1];
 
-const Name = url.searchParams.get("fullname")
+const Name = url.searchParams.get("Name")
 const Passportnumber =url.searchParams.get("phonenumber")
 
 const filters: any = {};

@@ -106,7 +106,7 @@ export default function Table() {
     id: '',
   });
   const { language } = useLanguage();
-  const t = translations[language] || translations.en; // Fallback to English
+  const t = translations[language] || translations.en;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -116,7 +116,6 @@ export default function Table() {
   const isFetchingRef = useRef(false);
   const router = useRouter();
 
-  // Load token from localStorage only on client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('_item');
@@ -124,7 +123,7 @@ export default function Table() {
     }
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (reset = false) => {
     if (isFetchingRef.current || !hasMore) return;
     isFetchingRef.current = true;
     setLoading(true);
@@ -151,7 +150,7 @@ export default function Table() {
       if (!response.ok) throw new Error('Failed to fetch data');
       const res = await response.json();
       if (res && res.length > 0) {
-        setData((prevData) => [...prevData, ...res]);
+        setData((prevData) => (reset ? res : [...prevData, ...res]));
         pageRef.current += 1;
       } else {
         setHasMore(false);
@@ -198,16 +197,14 @@ export default function Table() {
   );
 
   useEffect(() => {
-    if (storage) fetchData();
+    if (storage) fetchData(true);
   }, [storage, filters]);
 
-  // Debounced filter change handler
   const handleFilterChange = (e, column) => {
     const value = e.target.value;
     setFilters((prev) => ({ ...prev, [column]: value }));
     isFetchingRef.current = false;
     setHasMore(true);
-    setData([]);
     pageRef.current = 1;
   };
 
@@ -225,7 +222,6 @@ export default function Table() {
     }
   }, []);
 
-  // Status color mapping for booking status
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'booked':
@@ -239,9 +235,8 @@ export default function Table() {
     }
   };
 
-  // Set document direction for RTL languages
   useEffect(() => {
-    document.documentElement.dir = language === 'ur'  ||language === 'ar'  ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'ur' || language === 'ar' ? 'rtl' : 'ltr';
   }, [language]);
 
   return (
@@ -249,7 +244,6 @@ export default function Table() {
       <div className={`flex ${width > 600 ? 'flex-row' : 'flex-col'}`}>
         <Sidebar />
         <div className="container mx-auto p-6 flex-1">
-          {/* Page Title with Animation */}
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -259,7 +253,6 @@ export default function Table() {
             {t.title}
           </motion.h1>
 
-          {/* Filter Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -272,44 +265,36 @@ export default function Table() {
                   key: 'Name',
                   label: t.searchByName,
                   icon: <MagnifyingGlassIcon className="h-5 w-5" />,
-                },
-                {
-                  key: 'Passportnumber',
-                  label: t.searchByPassport,
-                  icon: <DocumentTextIcon className="h-5 w-5" />,
-                },
+                }
               ].map(({ key, label, icon }) => (
                 <div key={key} className="relative group">
-                <input
-                  type="text"
-                  id={`filter-${key}`}
-                  value={filters[key]}
-                  onChange={(e) => handleFilterChange(e, key)}
-                  placeholder=" "
-                  aria-label={label}
-                  className="w-full p-4 pl-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 bg-gray-50 peer"
-                />
-                
-                <label
-                  htmlFor={`filter-${key}`}
-                  className="absolute left-12 top-4 text-gray-500 transition-all duration-300
-                    peer-placeholder-shown:top-4 peer-placeholder-shown:text-base
-                    peer-focus:top-1 peer-focus:text-sm peer-focus:text-indigo-600
-                    group-hover:text-indigo-600"
-                >
-                  {label}
-                </label>
-                
-                <motion.div
-                  whileHover={{ scale: 1.2 }}
-                  className="absolute left-3 top-4 text-gray-400 group-hover:text-indigo-600"
-                >
-                  {icon}
-                </motion.div>
-              </div>
-              
+                  <input
+                    type="text"
+                    id={`filter-${key}`}
+                    value={filters[key]}
+                    onChange={(e) => handleFilterChange(e, key)}
+                    placeholder=" "
+                    aria-label={label}
+                    className="w-full p-4 pl-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 bg-gray-50 peer"
+                  />
+                  <label
+                    htmlFor={`filter-${key}`}
+                    className="absolute left-12 top-4 text-gray-500 transition-all duration-300
+                      peer-placeholder-shown:top-4 peer-placeholder-shown:text-base
+                      peer-focus:top-1 peer-focus:text-sm peer-focus:text-indigo-600
+                      group-hover:text-indigo-600"
+                  >
+                    {label}
+                  </label>
+                  <motion.div
+                    whileHover={{ scale: 1.2 }}
+                    className="absolute left-3 top-4 text-gray-400 group-hover:text-indigo-600"
+                  >
+                    {icon}
+                  </motion.div>
+                </div>
               ))}
-              <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+              {/* <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -319,7 +304,7 @@ export default function Table() {
                     setFilters({ age: '', id: '', Passportnumber: '', Name: '' });
                     setData([]);
                     pageRef.current = 1;
-                    fetchData();
+                    fetchData(true);
                   }}
                   className="flex-1 flex items-center justify-center bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm"
                   aria-label={t.reset}
@@ -335,7 +320,7 @@ export default function Table() {
                     setHasMore(true);
                     setData([]);
                     pageRef.current = 1;
-                    fetchData();
+                    fetchData(true);
                   }}
                   className="flex-1 flex items-center justify-center bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 shadow-sm"
                   aria-label={t.search}
@@ -343,11 +328,10 @@ export default function Table() {
                   <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
                   <span>{t.search}</span>
                 </motion.button>
-              </div>
+              </div> */}
             </div>
           </motion.div>
 
-          {/* Error Message */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -376,7 +360,6 @@ export default function Table() {
             )}
           </AnimatePresence>
 
-          {/* Data Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             <AnimatePresence>
               {data.length === 0 && !loading && (
@@ -488,7 +471,6 @@ export default function Table() {
             </AnimatePresence>
           </div>
 
-          {/* Infinite Scroll Trigger */}
           {hasMore && (
             <div ref={loadMoreRef} className="flex justify-center mt-8">
               {loading && data.length > 0 && (

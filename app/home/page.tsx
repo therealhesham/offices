@@ -1,6 +1,5 @@
 'use client'
 
-
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUserPlus, FiMessageSquare, FiList, FiSun, FiMoon, FiX } from 'react-icons/fi';
@@ -14,45 +13,36 @@ import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/navigationbar';
 import { jwtDecode } from "jwt-decode";
 import ChatWidget from '@/components/chat_widget';
+import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip as ChartTooltip, Legend, Title } from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, ChartTooltip, Legend, Title);
 
 export default function Home() {
-  const [url,setUrl]=useState("")
+  const [url, setUrl] = useState("");
   const ISSERVER = typeof window === 'undefined';
   
-  // let storage: string | null , lang: string | null, user: Record<string, unknown> | null;
-  // lang = localStorage.getItem('language');
-
-  // function name() {
-  //   if (!ISSERVER) { // or 
-  //     storage = localStorage.getItem('_item');
-
-  //    // const user = JSON.parse(localStorage.getItem('user') || '{}');
-  //    const payload = storage ? jwtDecode(storage) : null;
-  //    setUrl(payload?.url);
-  //  }    
-  // }
   let storage, lang, user;
   if (!ISSERVER) {
     storage = localStorage.getItem('_item');
     lang = localStorage.getItem('language');
-    // user = JSON.parse(localStorage.getItem('user') || '{}');
   }
 
   useEffect(() => {
-    // name()
-
-    if ( !ISSERVER) { // or !ISSERVER
-       storage = localStorage.getItem('_item');
-      // const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!ISSERVER) {
+      storage = localStorage.getItem('_item');
       const payload = storage ? jwtDecode(storage) : null;
       setUrl(payload?.url);
     }
-  }, []); // 
+  }, []);
+
   const [colorScheme, setColorScheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('colorScheme') || 'default';
     }
-    return 'default'})
+    return 'default'
+  });
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [messages, setMessages] = useState([]);
@@ -180,9 +170,7 @@ export default function Home() {
       },
       {
         title:
-         
-
- lang === 'fra'
+          lang === 'fra'
             ? 'Femmes de ménage disponibles'
             : lang === 'ur'
             ? 'دستیاب گھریلو ملازمہ'
@@ -272,7 +260,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={`min-h-screen scheme-${colorScheme}   ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} ${width > 600 ? 'flex flex-row' : ''}`} dir={lang === 'ar' || lang === 'ur' ? 'rtl' : 'ltr'}>
+    <div
+      className={[
+        'min-h-screen',
+        `scheme-${colorScheme}`,
+        theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50',
+        width > 600 ? 'flex flex-row' : ''
+      ].join(' ')}
+      dir={lang === 'ar' || lang === 'ur' ? 'rtl' : 'ltr'}
+    >
       <Sidebar />
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         {/* Header Section */}
@@ -285,7 +281,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-            <img src={url ? url :""} alt="Company Logo" className="h-10 rounded-md w-10" />
+            <img src={url ? url : ""} alt="Company Logo" className="h-10 rounded-md w-10" />
             <div>
               <h1
                 className={`text-2xl md:text-3xl font-bold ${
@@ -306,7 +302,7 @@ export default function Home() {
           <div className="flex items-center space-x-4">
             <Link href="/newemployer">
               <motion.button
-                className="flex items-center  bg-purple-600  text-white px-6 py-3 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-800 transition"
+                className="flex items-center bg-purple-600 text-white px-6 py-3 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-800 transition"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 data-tooltip-id="add-homemaid-tooltip"
@@ -347,7 +343,7 @@ export default function Home() {
               : lang === 'ur'
               ? 'ڈیش بورڈ'
               : lang === 'ar'
-              ? '  لوحة التحكم'
+              ? 'لوحة التحكم'
               : 'Dashboard Overview'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -385,7 +381,7 @@ export default function Home() {
                       <div>
                         <h3
                           id={item.id}
-                          className={`text-md font-semibold text-nowrap   ${
+                          className={`text-md font-semibold text-nowrap ${
                             theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
                           } hover:text-purple-600 transition`}
                         >
@@ -403,6 +399,113 @@ export default function Home() {
                     </motion.div>
                   </Link>
                 ))}
+          </div>
+
+          {/* Charts Section */}
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div
+              className={`p-6 rounded-2xl shadow-xl ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              }`}
+            >
+              <div style={{ height: '300px' }} aria-label="Bar chart of dashboard counters">
+                <Bar
+                  data={{
+                    labels: [
+                      lang === 'fra' ? 'Nouvelles réservations' : lang === 'ur' ? 'نئے تحفظات' : lang === 'ar' ? 'الحجوزات الجديدة' : 'New Reservations',
+                      lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : lang === 'ar' ? 'الخادمات المتاحة' : 'Available Homemaids',
+                      lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : lang === 'ar' ? 'محجوز' : 'Booked',
+                      lang === 'fra' ? 'Total' : lang === 'ur' ? 'کل' : lang === 'ar' ? 'الإجمالي' : 'Total'
+                    ],
+                    datasets: [{
+                      label: 'Counts',
+                      data: [counting?.recent || 0, counting?.countAvailable || 0, counting?.countRelated || 0, counting?.total || 0],
+                      backgroundColor: ['#8B5CF6', '#10B981', '#F59E0B', '#3B82F6'],
+                      borderColor: ['#7C3AED', '#059669', '#D97706', '#2563EB'],
+                      borderWidth: 1
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false
+                      },
+                      title: {
+                        display: true,
+                        text: lang === 'fra' ? 'Résumé des compteurs' : lang === 'ur' ? 'کاؤنٹرز کا خلاصہ' : lang === 'ar' ? 'العاملات' : 'Summary',
+                        color: theme === 'dark' ? '#E5E7EB' : '#1F2937',
+                        font: {
+                          size: 16
+                        }
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          color: theme === 'dark' ? '#E5E7EB' : '#1F2937'
+                        },
+                        grid: {
+                          color: theme === 'dark' ? '#374151' : '#E5E7EB'
+                        }
+                      },
+                      x: {
+                        ticks: {
+                          color: theme === 'dark' ? '#E5E7EB' : '#1F2937'
+                        },
+                        grid: {
+                          display: false
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div
+              className={`p-6 rounded-2xl shadow-xl ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              }`}
+            >
+              <div style={{ height: '300px' }} aria-label="Doughnut chart of dashboard counters">
+                <Doughnut
+                  data={{
+                    labels: [
+                      lang === 'fra' ? 'Femmes de ménage disponibles' : lang === 'ur' ? 'دستیاب گھریلو ملازمہ' : lang === 'ar' ? 'الخادمات المتاحة' : 'Available Homemaids',
+                      lang === 'fra' ? 'Réservée' : lang === 'ur' ? 'بک کروایا' : lang === 'ar' ? 'محجوز' : 'Booked'
+                    ],
+                    datasets: [{
+                      data: [counting?.countAvailable || 0, counting?.countRelated || 0],
+                      backgroundColor: ['#10B981', '#F59E0B'],
+                      borderColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      borderWidth: 2
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'right',
+                        labels: {
+                          color: theme === 'dark' ? '#E5E7EB' : '#1F2937'
+                        }
+                      },
+                      title: {
+                        display: true,
+                        text: lang === 'fra' ? 'Distribution des compteurs' : lang === 'ur' ? 'کاؤنٹرز کی تقسیم' : lang === 'ar' ? 'توزيع العاملات' : ' Distribution',
+                        color: theme === 'dark' ? '#E5E7EB' : '#1F2937',
+                        font: {
+                          size: 16
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -857,7 +960,7 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
-<ChatWidget/>
+      <ChatWidget />
     </div>
   );
 }

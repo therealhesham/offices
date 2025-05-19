@@ -289,7 +289,7 @@ const {language} = useLanguage()
           </motion.section>
 
           {/* Weekly Status */}
-          <motion.section
+          {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -311,10 +311,10 @@ const {language} = useLanguage()
             ) : (
               <p>No weekly status available</p>
             )}
-          </motion.section>
+          </motion.section> */}
 
           {/* Housing Details */}
-          <motion.section
+          {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -342,10 +342,10 @@ const {language} = useLanguage()
             ) : (
               <p>No housing details available</p>
             )}
-          </motion.section>
+          </motion.section> */}
 
           {/* Orders */}
-          <motion.section
+          {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -363,10 +363,10 @@ const {language} = useLanguage()
             ) : (
               <p>No orders available</p>
             )}
-          </motion.section>
+          </motion.section> */}
 
           {/* Sessions */}
-          <motion.section
+          {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -387,7 +387,7 @@ const {language} = useLanguage()
             ) : (
               <p>No sessions available</p>
             )}
-          </motion.section>
+          </motion.section> */}
         </div>
       </motion.div>
     </div>
