@@ -282,7 +282,7 @@ const[officeName,setOfficeName]=useState("")
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-          {url ? (
+          {url !== null ? (
   <img src={url} alt="Company Logo" className="h-10 w-10 rounded-full object-cover" />
 ) : (
   <span className="flex h-10 w-10 items-center justify-center bg-indigo-500 text-white text-lg font-semibold rounded-full">
