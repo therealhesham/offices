@@ -464,7 +464,7 @@ const FormPage = () => {
                   {[
                     { name: "PassportStart", label: "تاريخ بداية الجواز", type: "date", tooltip: "تاريخ الإصدار" },
                     { name: "PassportEnd", label: "تاريخ انتهاء الجواز", type: "date", tooltip: "تاريخ الانتهاء" },
-                    { name: "salary", label: "الراتب", type: "text", tooltip: "الراتب الشهري المتوقع" },
+                    { name: "salary in USD currency", label: "الراتب بالدولار", type: "text", tooltip: "الراتب الشهري المتوقع" },
                     { name: "experienceYears", label: "الخبرة (سنوات)", type: "text", tooltip: "سنوات الخبرة ذات الصلة" },
                   ].map((field, index) => (
                     <div key={field.name} className="relative group" style={{ animationDelay: `${index * 100}ms` }}>

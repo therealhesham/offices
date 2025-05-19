@@ -14,15 +14,10 @@ const url = new URL(req.url)
 
 const token = header.get("authorization")?.split(' ')[1];
 const Name = url.searchParams.get("Name")
-const Passportnumber =url.searchParams.get("Passportnumber")
 
 const filters: any = {};
 
 if (Name) filters.Name = { contains: (Name as string).toLowerCase() };
-if (Passportnumber)
-  filters.Passportnumber = {
-    contains: (Passportnumber as string).toLowerCase(),
-  };
 
 
 

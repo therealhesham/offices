@@ -319,11 +319,6 @@ export default function Table() {
                   key: 'Name',
                   placeholder: t.searchName,
                   icon: <MagnifyingGlassCircleIcon className="h-5 w-5" />,
-                },
-                {
-                  key: 'Passportnumber',
-                  placeholder: t.searchPassport,
-                  icon: <DocumentTextIcon className="h-5 w-5" />,
                 }
                 // ,
                 // {
@@ -354,7 +349,7 @@ export default function Table() {
               </div>
               
               ))}
-              <div className="flex gap-2">
+              {/* <div className="flex gap-2">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -375,7 +370,7 @@ export default function Table() {
                   <FolderIcon className="mr-2 h-5 w-5" />
                   {t.search}
                 </motion.button>
-              </div>
+              </div> */}
             </div>
 
             {/* Data Grid */}
@@ -434,26 +429,41 @@ export default function Table() {
                         ))}
                       </div>
                       <div className="mt-4 flex gap-2">
-                        <motion.button
-                          onClick={() => router.push(`/edit-cv/${item.id}`)}
-                          className="flex-1 px-4 py-2 flex flex-row justify-between bg-indigo-600 to-purple-600 text-white rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-700 transition-all"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          aria-label={`Edit profile for ${item.Name}`}
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                          <span>{t.editProfile}</span>
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleDeleteClick(item.id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          aria-label={`Delete profile for ${item.Name}`}
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </motion.button>
-                      </div>
+  {/* Preview CV Button */}
+  <motion.button
+    onClick={() => router.push(`/homemaid/${item.id}`)}
+    className="flex-1 px-4 py-2 flex flex-row justify-between bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-all"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    aria-label={`Preview CV for ${item.Name}`}
+  >
+    <DocumentTextIcon className="w-5 h-5 flex text-center" />
+    <span>{t.previewCV || 'Preview CV'}</span>
+  </motion.button>
+
+  {/* Edit Button */}
+  <motion.button
+    onClick={() => router.push(`/edit-cv/${item.id}`)}
+    className="flex-1 px-4 py-2 flex flex-row justify-between bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition-all"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    aria-label={`Edit profile for ${item.Name}`}
+  >
+    <PencilIcon className="w-5 h-5" />
+    <span>{t.editProfile}</span>
+  </motion.button>
+
+  {/* Delete Button */}
+  <motion.button
+    onClick={() => handleDeleteClick(item.id)}
+    className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all flex items-center justify-center"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    aria-label={`Delete profile for ${item.Name}`}
+  >
+    <TrashIcon className="w-5 h-5" />
+  </motion.button>
+</div>
                     </motion.div>
                   ))
                 )}
