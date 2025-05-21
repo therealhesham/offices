@@ -21,7 +21,6 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/navigationbar';
 import { useLanguage } from '../contexts/LanguageContext';
 
-// Translation object for all text
 const translations = {
   en: {
     title: 'Booked Homemaids',
@@ -88,6 +87,28 @@ const translations = {
     details: 'تفصيلات',
     timeline: 'وقتِ درخواست',
     notAvailable: 'دستیاب نہیں',
+  },
+  ar: {
+    title: 'الخادمات المحجوزات',
+    searchByName: 'البحث بالاسم',
+    searchByPassport: 'البحث برقم جواز السفر',
+    reset: 'إعادة تعيين',
+    search: 'بحث',
+    error: 'فشل تحميل البيانات. حاول مرة أخرى.',
+    noResults: 'لم يتم العثور على نتائج',
+    loading: 'جارٍ التحميل...',
+    id: 'المعرف',
+    name: 'الاسم',
+    phone: 'الهاتف',
+    nationality: 'الجنسية',
+    passportNumber: 'رقم جواز السفر',
+    passportStart: 'تاريخ بداية جواز السفر',
+    passportEnd: 'تاريخ نهاية جواز السفر',
+    maritalStatus: 'الحالة الاجتماعية',
+    bookingStatus: 'حالة الحجز',
+    details: 'التفاصيل',
+    timeline: 'الجدول الزمني للطلب',
+    notAvailable: 'غير متاح',
   },
 };
 

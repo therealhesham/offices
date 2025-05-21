@@ -22,7 +22,6 @@ import Navbar from '../components/navigationbar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Edit2Icon } from 'lucide-react';
 
-// Translation object for all text
 const translations = {
   en: {
     title: 'Available List',
@@ -42,8 +41,7 @@ const translations = {
     passportEnd: 'Passport End',
     maritalStatus: 'Marital Status',
     bookingStatus: 'Booking Status',
-    preview:  "preview",
-
+    preview: 'preview',
     details: 'Edit CV',
     timeline: 'Application Timeline',
     notAvailable: 'N/A',
@@ -59,16 +57,14 @@ const translations = {
     loading: 'Chargement...',
     id: 'ID',
     name: 'Nom',
-    
     phone: 'Téléphone',
     nationality: 'Nationalité',
     passportNumber: 'Numéro de passeport',
     passportStart: 'Début du passeport',
     passportEnd: 'Fin du passeport',
-    
     maritalStatus: 'État civil',
     bookingStatus: 'Statut de réservation',
-    preview:"preview",
+    preview: 'preview',
     details: 'edit',
     timeline: "Timeline de l'app",
     notAvailable: 'Non disponible',
@@ -91,10 +87,33 @@ const translations = {
     passportEnd: 'پاسپورٹ ختم',
     maritalStatus: 'ازدواجی حیثیت',
     bookingStatus: 'بکنگ کی حالت',
-    preview:"استعراض",
+    preview: 'استعراض',
     details: 'تحرير',
     timeline: 'وقتِ درخواست',
     notAvailable: 'دستیاب نہیں',
+  },
+  ar: {
+    title: 'القائمة المتاحة',
+    searchByName: 'البحث بالاسم',
+    searchByPassport: 'البحث برقم جواز السفر',
+    reset: 'إعادة تعيين',
+    search: 'بحث',
+    error: 'فشل تحميل البيانات. حاول مرة أخرى.',
+    noResults: 'لم يتم العثور على نتائج',
+    loading: 'جارٍ التحميل...',
+    id: 'المعرف',
+    name: 'الاسم',
+    phone: 'الهاتف',
+    nationality: 'الجنسية',
+    passportNumber: 'رقم جواز السفر',
+    passportStart: 'تاريخ بداية جواز السفر',
+    passportEnd: 'تاريخ نهاية جواز السفر',
+    maritalStatus: 'الحالة الاجتماعية',
+    bookingStatus: 'حالة الحجز',
+    preview: 'معاينة',
+    details: 'تعديل السيرة الذاتية',
+    timeline: 'الجدول الزمني للطلب',
+    notAvailable: 'غير متاح',
   },
 };
 

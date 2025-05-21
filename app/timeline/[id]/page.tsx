@@ -194,6 +194,64 @@ const translations = {
       },
     },
   },
+  ar: {
+    stages: [
+      'الربط مع مساند',
+      'الربط مع مساند الخارجي',
+      'الربط مع المكتب الخارجي',
+      'الفحص الطبي',
+      'الربط مع الوكالة',
+      'ختم السفارة',
+      'حجز التذكرة',
+      'الاستلام',
+    ],
+    title: 'الجدول الزمني للطلب',
+    subtitle: 'تتبع تقدم طلبك في الوقت الفعلي',
+    progress: 'التقدم: {percentage}%',
+    completed: 'مكتمل',
+    inProgress: 'قيد التنفيذ',
+    pending: 'معلق',
+    uploadLabel: 'رفع ملف الفحص الطبي',
+    uploadButton: 'رفع الملف',
+    uploading: 'جارٍ الرفع...',
+    uploadSuccess: 'تم رفع الملف بنجاح!',
+    uploadError: 'خطأ أثناء رفع الملف. الرجاء المحاولة مرة أخرى.',
+    viewFile: 'عرض الملف',
+    medicalFileUploaded: 'تم رفع الملف الطبي بالفعل.',
+    medicalFileRestricted: 'رفع الملف الطبي مسموح فقط خلال المرحلة الحالية.',
+    orderNotFound: 'الطلب غير موجود',
+    stageDetails: {
+      'الربط مع مساند': {
+        'Internal Musaned Contract': 'عقد مساند الداخلي',
+        'Date of Application': 'تاريخ التقديم',
+      },
+      'الربط مع مساند الخارجي': {
+        'External Musaned Contract': 'عقد مساند الخارجي',
+        'External Date Linking': 'تاريخ الربط الخارجي',
+      },
+      'الربط مع المكتب الخارجي': {
+        'External Office Approval': 'موافقة المكتب الخارجي',
+        'External Office File': 'ملف المكتب الخارجي',
+      },
+      'الفحص الطبي': {
+        'Medical Check File': 'ملف الفحص الطبي',
+      },
+      'الربط مع الوكالة': {
+        'Agency Date': 'تاريخ الوكالة',
+      },
+      'ختم السفارة': {
+        'Embassy Sealing': 'ختم السفارة',
+      },
+      'حجز التذكرة': {
+        'Ticket File': 'ملف التذكرة',
+        'Booking Date': 'تاريخ الحجز',
+      },
+      'الاستلام': {
+        'Receiving File': 'ملف الاستلام',
+        'Delivery Date': 'تاريخ التسليم',
+      },
+    },
+  },
 };
 
 export default function TimelinePage() {
@@ -209,7 +267,7 @@ export default function TimelinePage() {
 
   // Get language from local storage if context is not available
   const ISSERVER = typeof window === 'undefined';
-  let lang = language;
+  let lang: string = language;
   if (!ISSERVER && !language) {
     lang = localStorage.getItem('language') || 'en';
   }
@@ -217,6 +275,7 @@ export default function TimelinePage() {
   // Set RTL for Urdu
   useEffect(() => {
     document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
+    // alert(lang)
   }, [lang]);
 
   useEffect(() => {
@@ -287,18 +346,20 @@ export default function TimelinePage() {
   if (!order) {
     return (
       <div className="text-center text-red-500 text-xl font-semibold py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
-        {translations[lang].orderNotFound}
+        {translations[lang]?.orderNotFound}
       </div>
     );
   }
 
-  const currentStageIndex = order.bookingstatus ? translations[lang].stages.indexOf(order.bookingstatus) : -1;
-  const progressPercentage = ((currentStageIndex + 1) / translations[lang].stages.length) * 100;
+  const currentStageIndex = order.bookingstatus ? translations[lang]?.stages.indexOf(order?.bookingstatus) : -1;
+  const progressPercentage = ((currentStageIndex + 1) / translations[lang]?.stages.length) * 100;
 
   return (
     <div className="min-h-screen flex font-sans" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <Sidebar />
-      <div className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div 
+      
+      className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -306,9 +367,9 @@ export default function TimelinePage() {
             className="text-center mb-12"
           >
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-              {translations[lang].title.replace('{name}', order.ClientName)}
+              {translations[lang]?.title.replace('{name}', order.ClientName)}
             </h1>
-            <p className="mt-4 text-lg text-gray-600">{translations[lang].subtitle}</p>
+            <p className="mt-4 text-lg text-gray-600">{translations[lang]?.subtitle}</p>
           </motion.div>
 
           <div className="mb-12">
