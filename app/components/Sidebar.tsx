@@ -35,8 +35,8 @@ export default function Sidebar() {
   const translation = useLanguage();
   const checkCAr = async()=>{
     const check = await fetch("/api/checklogin")
-  
-  if(check.redirected){
+
+    if(check.redirected){
     router.push("/login")
     return
   }

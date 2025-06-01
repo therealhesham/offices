@@ -31,7 +31,7 @@ const translations = {
       Religion: 'Religion',
       phone: 'Phone Number',
       email: 'Email Address',
-      dateOfBirth: 'Date of Birth',
+      dateOfbirth: 'Date of Birth',
       maritalStatus: 'Marital Status',
       education: 'Education',
       PassportStart: 'Passport Start Date',
@@ -57,7 +57,7 @@ const translations = {
       Religion: 'Religious affiliation (optional)',
       phone: 'Include country code',
       email: 'Valid email address',
-      dateOfBirth: 'Must be 18+ years old',
+      dateOfbirth: 'Must be 18+ years old',
       maritalStatus: 'Single, married, etc.',
       education: 'Highest level of education',
       PassportStart: 'Passport issue date',
@@ -72,12 +72,12 @@ const translations = {
       nationality: 'Nationality is required',
       phone: 'Phone number is required',
       email: 'Email is required',
-      dateOfBirth: 'Date of birth is required',
+      dateOfbirth: 'Date of birth is required',
       fullBodyImage: 'Full body image is required',
       personalImage: 'Personal image is required',
       invalidEmail: 'Invalid email format',
       invalidPhone: 'Phone must be 8-15 digits',
-      invalidDateOfBirth: 'Date of birth must be in the past',
+      invaliddateOfbirth: 'Date of birth must be in the past',
       ageUnder18: 'Must be at least 18 years old',
       invalidPassportDates: 'Passport end date must be after start date',
       invalidSalary: 'Salary must be a positive number',
@@ -110,7 +110,7 @@ const translations = {
       Religion: 'Religion',
       phone: 'Numéro de téléphone',
       email: 'Adresse e-mail',
-      dateOfBirth: 'Date de naissance',
+      dateOfbirth: 'Date de naissance',
       maritalStatus: 'État civil',
       education: 'Éducation',
       PassportStart: 'Date de début du passeport',
@@ -136,7 +136,7 @@ const translations = {
       Religion: 'Affiliation religieuse (facultatif)',
       phone: 'Inclure le code du pays',
       email: 'Adresse e-mail valide',
-      dateOfBirth: 'Doit avoir 18 ans ou plus',
+      dateOfbirth: 'Doit avoir 18 ans ou plus',
       maritalStatus: 'Célibataire, marié, etc.',
       education: 'Niveau d’éducation le plus élevé',
       PassportStart: 'Date d’émission du passeport',
@@ -151,12 +151,12 @@ const translations = {
       nationality: 'La nationalité est requise',
       phone: 'Le numéro de téléphone est requis',
       email: 'L’e-mail est requis',
-      dateOfBirth: 'La date de naissance est requise',
+      dateOfbirth: 'La date de naissance est requise',
       fullBodyImage: 'L’image du corps entier est requise',
       personalImage: 'L’image personnelle est requise',
       invalidEmail: 'Format d’e-mail invalide',
       invalidPhone: 'Le téléphone doit comporter 8 à 15 chiffres',
-      invalidDateOfBirth: 'La date de naissance doit être dans le passé',
+      invaliddateOfbirth: 'La date de naissance doit être dans le passé',
       ageUnder18: 'Doit avoir au moins 18 ans',
       invalidPassportDates: 'La date de fin du passeport doit être postérieure à la date de début',
       invalidSalary: 'Le salaire doit être un nombre positif',
@@ -189,7 +189,7 @@ const translations = {
       Religion: 'مذہب',
       phone: 'فون نمبر',
       email: 'ای میل ایڈریس',
-      dateOfBirth: 'تاریخ پیدائش',
+      dateOfbirth: 'تاریخ پیدائش',
       maritalStatus: 'ازدواجی حیثیت',
       education: 'تعلیم',
       PassportStart: 'پاسپورٹ شروع ہونے کی تاریخ',
@@ -215,7 +215,7 @@ const translations = {
       Religion: 'مذہبی وابستگی (اختیاری)',
       phone: 'ملک کا کوڈ شامل کریں',
       email: 'درست ای میل ایڈریس',
-      dateOfBirth: '18 سال یا اس سے زیادہ ہونا چاہیے',
+      dateOfbirth: '18 سال یا اس سے زیادہ ہونا چاہیے',
       maritalStatus: 'غیر شادی شدہ، شادی شدہ، وغیرہ',
       education: 'اعلیٰ تعلیمی سطح',
       PassportStart: 'پاسپورٹ جاری ہونے کی تاریخ',
@@ -230,12 +230,12 @@ const translations = {
       nationality: 'قومیت درکار ہے',
       phone: 'فون نمبر درکار ہے',
       email: 'ای میل درکار ہے',
-      dateOfBirth: 'تاریخ پیدائش درکار ہے',
+      dateOfbirth: 'تاریخ پیدائش درکار ہے',
       fullBodyImage: 'مکمل جسم کی تصویر درکار ہے',
       personalImage: 'ذاتی تصویر درکار ہے',
       invalidEmail: 'غلط ای میل فارمیٹ',
       invalidPhone: 'فون نمبر 8-15 ہندسوں کا ہونا چاہیے',
-      invalidDateOfBirth: 'تاریخ پیدائش ماضی میں ہونی چاہیے',
+      invaliddateOfbirth: 'تاریخ پیدائش ماضی میں ہونی چاہیے',
       ageUnder18: 'کم از کم 18 سال کا ہونا چاہیے',
       invalidPassportDates: 'پاسپورٹ کی اختتامی تاریخ شروع کی تاریخ کے بعد ہونی چاہیے',
       invalidSalary: 'تنخواہ مثبت عدد ہونی چاہیے',
@@ -254,7 +254,7 @@ const FormPage = () => {
     nationality: '',
     phone: '',
     email: '',
-    dateOfBirth: '',
+    dateOfbirth: '',
     salary: '',
     PassportStart: '',
     PassportEnd: '',
@@ -332,7 +332,7 @@ const FormPage = () => {
     if (!formData.nationality.trim()) newErrors.nationality = t.errors.nationality;
     if (!formData.phone.trim()) newErrors.phone = t.errors.phone;
     if (!formData.email.trim()) newErrors.email = t.errors.email;
-    if (!formData.dateOfBirth) newErrors.dateOfBirth = t.errors.dateOfBirth;
+    if (!formData.dateOfbirth) newErrors.dateOfbirth = t.errors.dateOfbirth;
     if (!formData.fullBodyImage) newErrors.fullBodyImage = t.errors.fullBodyImage;
     if (!formData.personalImage) newErrors.personalImage = t.errors.personalImage;
 
@@ -347,11 +347,11 @@ const FormPage = () => {
     }
 
     const today = new Date();
-    if (formData.dateOfBirth) {
-      const dob = new Date(formData.dateOfBirth);
-      if (dob >= today) newErrors.dateOfBirth = t.errors.invalidDateOfBirth;
+    if (formData.dateOfbirth) {
+      const dob = new Date(formData.dateOfbirth);
+      if (dob >= today) newErrors.dateOfbirth = t.errors.invaliddateOfbirth;
       const age = today.getFullYear() - dob.getFullYear();
-      if (age < 18) newErrors.dateOfBirth = t.errors.ageUnder18;
+      if (age < 18) newErrors.dateOfbirth = t.errors.ageUnder18;
     }
 
     if (formData.PassportStart && formData.PassportEnd) {
@@ -457,7 +457,7 @@ const FormPage = () => {
           nationality: '',
           phone: '',
           email: '',
-          dateOfBirth: '',
+          dateOfbirth: '',
           salary: '',
           PassportStart: '',
           PassportEnd: '',
@@ -682,7 +682,7 @@ const FormPage = () => {
                     { name: 'Religion', type: 'text', tooltip: t.tooltips.Religion },
                     { name: 'phone', type: 'text', required: true, tooltip: t.tooltips.phone },
                     { name: 'email', type: 'email', required: true, tooltip: t.tooltips.email },
-                    { name: 'dateOfBirth', type: 'date', required: true, tooltip: t.tooltips.dateOfBirth },
+                    { name: 'dateOfbirth', type: 'date', required: true, tooltip: t.tooltips.dateOfirth },
                     { name: 'maritalStatus', type: 'text', tooltip: t.tooltips.maritalStatus },
                     { name: 'education', type: 'text', tooltip: t.tooltips.education },
                   ].map((field, index) => (

@@ -1,4 +1,3 @@
-// File: /app/api/offices/route.js
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
@@ -18,7 +17,7 @@ export async function POST(req) {
     if (fetching) {
       // Sign the JWT with office data (could be a subset of the office data, not the entire object)
       const signing = jwt.sign({ id: fetching.id, office: fetching.office ,url:fetching.url}, "sss", {
-        expiresIn: '1h', // Optionally add expiration time
+        expiresIn: '24h', // Optionally add expiration time
       });
 
       const cookieStore = await cookies()
