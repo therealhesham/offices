@@ -20,6 +20,8 @@ const translations = {
     uploadPDFButtonTooltip: 'Upload PDF file and extract data automatically using AI',
     automaticMethod: 'Automatic Method',
     manualMethod: 'Manual Method',
+    tabManual: 'Manual Entry',
+    tabAutomatic: 'Automatic Upload',
     reviewExtractedData: 'Review extracted data from PDF',
     uploadNewPDF: 'Upload New PDF',
     backToManual: 'Back to Manual Method',
@@ -135,6 +137,8 @@ const translations = {
     uploadPDFButtonTooltip: 'Télécharger un fichier PDF et extraire les données automatiquement avec l\'IA',
     automaticMethod: 'Méthode Automatique',
     manualMethod: 'Méthode Manuelle',
+    tabManual: 'Saisie Manuelle',
+    tabAutomatic: 'Téléchargement Automatique',
     reviewExtractedData: 'Examiner les données extraites du PDF',
     uploadNewPDF: 'Télécharger Nouveau PDF',
     backToManual: 'Retour à la Méthode Manuelle',
@@ -225,6 +229,8 @@ const translations = {
     uploadPDFButtonTooltip: 'رفع ملف PDF واستخراج البيانات تلقائياً باستخدام الذكاء الاصطناعي',
     automaticMethod: 'الطريقة التلقائية',
     manualMethod: 'الطريقة اليدوية',
+    tabManual: 'الإدخال اليدوي',
+    tabAutomatic: 'الرفع التلقائي',
     reviewExtractedData: 'مراجعة البيانات المستخرجة من PDF',
     uploadNewPDF: 'رفع PDF جديد',
     backToManual: 'العودة للطريقة اليدوية',
@@ -323,6 +329,8 @@ const translations = {
     uploadPDFButtonTooltip: 'PDF فائل اپ لوڈ کریں اور AI کا استعمال کرتے ہوئے ڈیٹا خودکار نکالیں',
     automaticMethod: 'خودکار طریقہ',
     manualMethod: 'دستی طریقہ',
+    tabManual: 'دستی انٹری',
+    tabAutomatic: 'خودکار اپ لوڈ',
     reviewExtractedData: 'PDF سے نکالے گئے ڈیٹا کا جائزہ لیں',
     uploadNewPDF: 'نیا PDF اپ لوڈ کریں',
     backToManual: 'دستی طریقے پر واپس جائیں',
@@ -451,6 +459,7 @@ const FormPage = () => {
   const [showPDFProcessor, setShowPDFProcessor] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [inputMethod, setInputMethod] = useState<'automatic' | 'manual' | null>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'automatic'>('manual');
 
   const { language } = useLanguage();
   // Fallback to English if language is invalid
@@ -746,7 +755,8 @@ const FormPage = () => {
     
     // Close PDF processor and show the form for review
     setShowPDFProcessor(false);
-    // Keep inputMethod as 'automatic' to show the form for review
+    // Switch to manual tab to show the form for review
+    setActiveTab('manual');
   };
 
   // Handle PDF Images Extracted
@@ -840,26 +850,50 @@ const FormPage = () => {
                 <p className="text-xs text-gray-600 mt-1">{formProgress}% {t.completed}</p>
               </div>
             </div>
-            <div className="mt-4  flex justify-end">
-                    <button
-                      onClick={() => {
-                        setInputMethod('automatic');
-                        setShowPDFProcessor(true);
-                      }}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                      title={t.uploadPDFButtonTooltip}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>{t.uploadPDFButton}</span>
-                      </div>
-                    </button>
-                </div>
+            {/* Tab System for Method Selection */}
+            <div className="mb-8">
+              <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+                <button
+                  onClick={() => {
+                    setActiveTab('manual');
+                    setInputMethod('manual');
+                  }}
+                  className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
+                    activeTab === 'manual'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>{t.tabManual}</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('automatic');
+                    setInputMethod('automatic');
+                  }}
+                  className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
+                    activeTab === 'automatic'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>{t.tabAutomatic}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
 
-            {/* Method Indicator - Only show when using automatic method */}
-            {inputMethod === 'automatic' && (
+            {/* Method Indicator - Only show when using automatic method and have extracted data */}
+            {inputMethod === 'automatic' && formData.Name && (
               <div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -934,7 +968,9 @@ const FormPage = () => {
             </div>
           )}
 
-          <form onSubmit={postNewEmployer} className="space-y-8">
+          {/* Show form only when manual tab is active */}
+          {activeTab === 'manual' && (
+            <form onSubmit={postNewEmployer} className="space-y-8">
             {/* Image Upload Section */}
             <div className="bg-gray-50 rounded-2xl p-6 transition-all duration-300">
               <div className="flex justify-between items-center mb-4">
@@ -1283,15 +1319,42 @@ const FormPage = () => {
                 )}
               </button>
             </div>
-          </form>
+            </form>
+          )}
+
+          {/* Show automatic method content when automatic tab is active */}
+          {activeTab === 'automatic' && (
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">{t.automaticMethod}</h3>
+                <p className="text-gray-600 mb-8">{t.uploadPDFButtonTooltip}</p>
+                <button
+                  onClick={() => setShowPDFProcessor(true)}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-lg font-medium"
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>{t.uploadPDFButton}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* PDF Processor Modal */}
       {showPDFProcessor && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 bg-black/50">
           {/* Method Indicator for Automatic */}
-          <div className="absolute top-4 left-4 z-10">
+          {/* <div className="absolute top-4 left-4 z-10">
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-blue-200 shadow-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
@@ -1314,7 +1377,7 @@ const FormPage = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
           
           <PDFProcessor
             onDataExtracted={handlePDFDataExtracted}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // Translation dictionary
 const translations = {
@@ -205,8 +205,8 @@ const translations = {
     processing: 'جاري المعالجة...',
     extractImagesFromPDF: 'استخراج الصور من PDF',
     extractedImagesCount: 'تم استخراج {count} صورة من الملف. يرجى اختيار صورتين:',
-    personalImage: '{t.personalImage}',
-    fullBodyImage: '{t.fullBodyImage}',
+    personalImage: 'الصورة الشخصية',
+    fullBodyImage: 'صورة الجسم كاملاً',
     continueToExtract: 'المتابعة لاستخراج البيانات',
     imagesSelectedSuccessfully: 'تم اختيار الصور بنجاح. اضغط على الزر أدناه لرفع الصور إلى Digital Ocean.',
     selectedImagesForUpload: 'الصور المختارة للرفع:',
@@ -233,7 +233,7 @@ const translations = {
     uploadFailed: 'فشل في رفع الصور المختارة: {error}',
     pleaseSelectAtLeastOneImage: 'يرجى اختيار صورة واحدة على الأقل',
     noDataToSave: 'لا توجد بيانات للحفظ',
-    pleaseSelectBothImages: 'يرجى اختيار {t.personalImage} و{t.fullBodyImage}',
+    pleaseSelectBothImages: 'يرجى اختيار الصورة الشخصية وصورة الجسم كاملاً',
     errorOccurred: 'حدث خطأ',
     failedToExtractImages: 'فشل في استخراج الصور من PDF',
     noImagesFound: 'لم يتم العثور على صور في PDF',
@@ -245,8 +245,8 @@ const translations = {
     retryWithLatestModel: 'جرب بالنموذج الأحدث (Pro)',
     profileImageAlt: 'صورة شخصية {index}',
     fullImageAlt: 'صورة بالطول {index}',
-    personalImageAlt: '{t.personalImage}',
-    fullBodyImageAlt: '{t.fullBodyImage}'
+    personalImageAlt: 'الصورة الشخصية',
+    fullBodyImageAlt: 'صورة الجسم كاملاً'
   }
 };
 
@@ -280,9 +280,15 @@ interface PDFProcessorProps {
   language?: string;
 }
 
-export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClose, language = 'ar' }: PDFProcessorProps) {
+export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClose, language = 'en' }: PDFProcessorProps) {
   // Get translations for the current language
-  const t = translations[language as keyof typeof translations] || translations.ar;
+  const t = translations[language as keyof typeof translations] || translations.en;
+  
+  // Force re-render when language changes
+  useEffect(() => {
+    // This will trigger a re-render when language prop changes
+    console.log('PDFProcessor language changed to:', language);
+  }, [language]);
   
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -614,7 +620,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0  flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         <div className="px-6 py-8 sm:p-10">
           <div className="flex justify-between items-center mb-8">
@@ -910,18 +916,18 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                 </h3>
                 <div className="flex space-x-6 justify-end">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">{t.personalImage}</p>
+                    <p className="text-sm text-gray-600 mb-2">الصورة الشخصية</p>
                     <img
                       src={selectedProfileImage}
-                      alt="{t.personalImage}"
+                      alt="الصورة الشخصية"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">{t.fullBodyImage}</p>
+                    <p className="text-sm text-gray-600 mb-2">الصورة الكاملة</p>
                     <img
                       src={selectedFullImage}
-                      alt="{t.fullBodyImage}"
+                      alt="الصورة الكاملة"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
