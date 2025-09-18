@@ -13,18 +13,23 @@ export async function middleware(req:NextRequest) {
 
   try {
     const { pathname } = req.nextUrl;
-    const cookieStore = await cookies()
-  const token =cookieStore.get('token')
-    const verify = jwt.decode(token.value)
-    console.log(url)
-    // console.log(cookieStore)
+    
+    // Skip middleware for login page and API routes
+    if (pathname === '/login' || pathname.startsWith('/api/')) {
+      return NextResponse.next();
+    }
 
-    // Example: If user is trying to access the "/admin" route, check if they are logged in
-    if (pathname.startsWith('/')) {
-      // const user = req.cookies.user || null; // Assuming user is saved in cookies
-      if (!verify) {
-        return NextResponse.rewrite(url); // Redirect to login page if not logged in
-      }
+    // Check for token in cookies
+    const token = req.cookies.get('token')?.value;
+    
+    if (!token) {
+      return NextResponse.rewrite(url); // Redirect to login page if not logged in
+    }
+
+    // Verify token
+    const verify = jwt.decode(token);
+    if (!verify) {
+      return NextResponse.rewrite(url); // Redirect to login page if token is invalid
     }
   
     return NextResponse.next(); 

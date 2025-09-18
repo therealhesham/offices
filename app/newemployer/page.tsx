@@ -319,6 +319,7 @@ const FormPage = () => {
   const [width, setWidth] = useState(0);
   const [showPDFProcessor, setShowPDFProcessor] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [inputMethod, setInputMethod] = useState<'automatic' | 'manual' | null>(null);
 
   const { language } = useLanguage();
   // Fallback to English if language is invalid
@@ -611,7 +612,10 @@ const FormPage = () => {
       ...prevData,
       ...extractedData
     }));
+    
+    // Close PDF processor and show the form for review
     setShowPDFProcessor(false);
+    // Keep inputMethod as 'automatic' to show the form for review
   };
 
   // Handle PDF Images Extracted
@@ -684,24 +688,134 @@ const FormPage = () => {
     <div className={`min-h-screen bg-gradient-to-br from-[#F5F5F0] to-[#E5E5E5] text-gray-800 ${width > 640 ? 'flex flex-row' : 'flex flex-col'}`}>
       <Sidebar />
       <div className="flex-1 p-4 sm:p-8 md:p-12 overflow-auto">
-        <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-lg p-6 sm:p-10 md:p-12">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-800 tracking-tight">
-              {t.title}
-            </h1>
-            <div className="w-full sm:w-64">
-              <p className="text-sm text-gray-600 mb-2">{t.completionPercentage}</p>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-gray-500 to-gray-700 transition-all duration-500"
-                  style={{ width: `${formProgress}%` }}
-                ></div>
+        {/* Method Selection Modal */}
+        {!inputMethod && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 max-w-4xl w-full animate-modal-in">
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-white">
+                <h2 className="text-3xl font-bold text-center mb-2">اختر طريقة إضافة العاملة</h2>
+                <p className="text-center text-purple-100">اختر الطريقة المناسبة لإضافة بيانات العاملة</p>
               </div>
-              <p className="text-xs text-gray-600 mt-1">{formProgress}% {t.completed}</p>
+              
+              <div className="p-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Automatic Method */}
+                  <div 
+                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    onClick={() => {
+                      setInputMethod('automatic');
+                      setShowPDFProcessor(true);
+                    }}
+                  >
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border-2 border-transparent group-hover:border-blue-300 transition-all duration-300">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">الطريقة التلقائية</h3>
+                        <p className="text-gray-600 mb-4">رفع ملف PDF واستخراج البيانات تلقائياً باستخدام الذكاء الاصطناعي</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">ذكاء اصطناعي</span>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">سريع</span>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">دقيق</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Method */}
+                  <div 
+                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    onClick={() => setInputMethod('manual')}
+                  >
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 border-2 border-transparent group-hover:border-green-300 transition-all duration-300">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">الطريقة اليدوية</h3>
+                        <p className="text-gray-600 mb-4">إدخال البيانات يدوياً مع التحكم الكامل في جميع الحقول</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">تحكم كامل</span>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">مرونة</span>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">دقيق</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          {response && (
+        {/* Form Content - Show for both manual and automatic (after PDF processing) */}
+        {inputMethod && (
+          <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-lg p-6 sm:p-10 md:p-12">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-800 tracking-tight">
+                {t.title}
+              </h1>
+              <div className="w-full sm:w-64">
+                <p className="text-sm text-gray-600 mb-2">{t.completionPercentage}</p>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-gray-500 to-gray-700 transition-all duration-500"
+                    style={{ width: `${formProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">{formProgress}% {t.completed}</p>
+              </div>
+            </div>
+
+            {/* Method Indicator */}
+            <div className={`mb-8 p-4 rounded-2xl border ${inputMethod === 'automatic' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${inputMethod === 'automatic' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                    {inputMethod === 'automatic' ? (
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {inputMethod === 'automatic' ? 'الطريقة التلقائية' : 'الطريقة اليدوية'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {inputMethod === 'automatic' ? 'مراجعة البيانات المستخرجة من PDF' : 'إدخال البيانات يدوياً'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  {inputMethod === 'automatic' && (
+                    <button
+                      onClick={() => setShowPDFProcessor(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300"
+                    >
+                      📄 رفع PDF جديد
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setInputMethod(null)}
+                    className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg transition-all duration-300 border border-gray-300"
+                  >
+                    تغيير الطريقة
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {response && (
             <div className="mb-8 p-4 bg-green-100 border border-green-400 rounded-lg animate-fade-in">
               <p className="text-green-700 font-medium">{t.successMessage}</p>
             </div>
@@ -762,13 +876,6 @@ const FormPage = () => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPDFProcessor(true)}
-                  className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 text-sm font-medium"
-                >
-                  📄 استخراج من PDF
                 </button>
               </div>
               {expandedSections.images && (
@@ -1060,14 +1167,14 @@ const FormPage = () => {
                 <svg className="w-5 h-5 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                <div>
+                {/* <div>
                   <p className="text-sm font-medium text-blue-800">
                     سيتم حفظ جميع البيانات في جدول AutomaticEmployee
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
                     هذا الجدول مخصص لحفظ بيانات العاملات سواء كانت مدخلة يدوياً أو مستخرجة من PDF
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -1102,15 +1209,44 @@ const FormPage = () => {
             </div>
           </form>
         </div>
+        )}
       </div>
 
       {/* PDF Processor Modal */}
       {showPDFProcessor && (
-        <PDFProcessor
-          onDataExtracted={handlePDFDataExtracted}
-          onImagesExtracted={handlePDFImagesExtracted}
-          onClose={handlePDFProcessorClose}
-        />
+        <div className="fixed inset-0 z-50">
+          {/* Method Indicator for Automatic */}
+          <div className="absolute top-4 left-4 z-10">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-blue-200 shadow-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">الطريقة التلقائية</h3>
+                  <p className="text-xs text-gray-600">رفع PDF واستخراج البيانات</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPDFProcessor(false);
+                    setInputMethod(null);
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg transition-all duration-300 text-sm"
+                >
+                  تغيير الطريقة
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <PDFProcessor
+            onDataExtracted={handlePDFDataExtracted}
+            onImagesExtracted={handlePDFImagesExtracted}
+            onClose={handlePDFProcessorClose}
+          />
+        </div>
       )}
 
       <style jsx>{`
@@ -1127,6 +1263,20 @@ const FormPage = () => {
         }
         .animate-slide-in {
           animation: slide-in 0.5s ease-out;
+        }
+        
+        @keyframes modal-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        .animate-modal-in {
+          animation: modal-in 0.3s ease-out;
         }
       `}</style>
     </div>
