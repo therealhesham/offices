@@ -18,6 +18,15 @@ const translations = {
     processing: 'Processing...',
     uploadPDFButton: 'Upload CV Automatically',
     uploadPDFButtonTooltip: 'Upload PDF file and extract data automatically using AI',
+    automaticMethod: 'Automatic Method',
+    manualMethod: 'Manual Method',
+    reviewExtractedData: 'Review extracted data from PDF',
+    uploadNewPDF: 'Upload New PDF',
+    backToManual: 'Back to Manual Method',
+    changeMethod: 'Change Method',
+    dataExtractionSuccess: 'Data extracted successfully!',
+    missingDataAlert: 'The following data is missing or incorrect:',
+    pleaseReviewData: 'Please review the extracted data and complete the missing fields.',
     imagesSection: 'Upload Images',
     fullBodyImage: 'Full Body Image',
     personalImage: 'Personal Image',
@@ -124,6 +133,15 @@ const translations = {
     processing: 'Traitement en cours...',
     uploadPDFButton: 'Télécharger CV Automatiquement',
     uploadPDFButtonTooltip: 'Télécharger un fichier PDF et extraire les données automatiquement avec l\'IA',
+    automaticMethod: 'Méthode Automatique',
+    manualMethod: 'Méthode Manuelle',
+    reviewExtractedData: 'Examiner les données extraites du PDF',
+    uploadNewPDF: 'Télécharger Nouveau PDF',
+    backToManual: 'Retour à la Méthode Manuelle',
+    changeMethod: 'Changer de Méthode',
+    dataExtractionSuccess: 'Données extraites avec succès !',
+    missingDataAlert: 'Les données suivantes sont manquantes ou incorrectes :',
+    pleaseReviewData: 'Veuillez examiner les données extraites et compléter les champs manquants.',
     imagesSection: 'Télécharger des images',
     fullBodyImage: 'Image du corps entier',
     personalImage: 'Image personnelle',
@@ -205,6 +223,15 @@ const translations = {
     processing: 'جاري المعالجة...',
     uploadPDFButton: 'رفع سيرة ذاتية تلقائياً',
     uploadPDFButtonTooltip: 'رفع ملف PDF واستخراج البيانات تلقائياً باستخدام الذكاء الاصطناعي',
+    automaticMethod: 'الطريقة التلقائية',
+    manualMethod: 'الطريقة اليدوية',
+    reviewExtractedData: 'مراجعة البيانات المستخرجة من PDF',
+    uploadNewPDF: 'رفع PDF جديد',
+    backToManual: 'العودة للطريقة اليدوية',
+    changeMethod: 'تغيير الطريقة',
+    dataExtractionSuccess: 'تم استخراج البيانات بنجاح!',
+    missingDataAlert: 'البيانات التالية مفقودة أو غير صحيحة:',
+    pleaseReviewData: 'يرجى مراجعة البيانات المستخرجة وإكمال الحقول المفقودة.',
     imagesSection: 'رفع الصور',
     fullBodyImage: 'صورة الجسم كاملاً',
     personalImage: 'الصورة الشخصية',
@@ -294,6 +321,15 @@ const translations = {
     processing: 'پروسیسنگ جاری ہے...',
     uploadPDFButton: 'CV خودکار اپ لوڈ کریں',
     uploadPDFButtonTooltip: 'PDF فائل اپ لوڈ کریں اور AI کا استعمال کرتے ہوئے ڈیٹا خودکار نکالیں',
+    automaticMethod: 'خودکار طریقہ',
+    manualMethod: 'دستی طریقہ',
+    reviewExtractedData: 'PDF سے نکالے گئے ڈیٹا کا جائزہ لیں',
+    uploadNewPDF: 'نیا PDF اپ لوڈ کریں',
+    backToManual: 'دستی طریقے پر واپس جائیں',
+    changeMethod: 'طریقہ تبدیل کریں',
+    dataExtractionSuccess: 'ڈیٹا کامیابی سے نکالا گیا!',
+    missingDataAlert: 'مندرجہ ذیل ڈیٹا غائب یا غلط ہے:',
+    pleaseReviewData: 'براہ کرم نکالے گئے ڈیٹا کا جائزہ لیں اور غائب فیلڈز کو مکمل کریں۔',
     imagesSection: 'تصاویر اپ لوڈ کریں',
     fullBodyImage: 'مکمل جسم کی تصویر',
     personalImage: 'ذاتی تصویر',
@@ -700,7 +736,7 @@ const FormPage = () => {
     
     if (validationErrors.length > 0) {
       // Show validation errors to user
-      alert(`تم استخراج البيانات بنجاح!\n\nالبيانات التالية مفقودة أو غير صحيحة:\n${validationErrors.join('\n')}\n\nيرجى مراجعة البيانات المستخرجة وإكمال الحقول المفقودة.`);
+      alert(`${t.dataExtractionSuccess}\n\n${t.missingDataAlert}\n${validationErrors.join('\n')}\n\n${t.pleaseReviewData}`);
     }
     
     setFormData((prevData: any) => ({
@@ -833,8 +869,8 @@ const FormPage = () => {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">الطريقة التلقائية</h3>
-                      <p className="text-sm text-gray-600">مراجعة البيانات المستخرجة من PDF</p>
+                      <h3 className="text-lg font-semibold text-gray-800">{t.automaticMethod}</h3>
+                      <p className="text-sm text-gray-600">{t.reviewExtractedData}</p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -842,13 +878,13 @@ const FormPage = () => {
                       onClick={() => setShowPDFProcessor(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300"
                     >
-                      📄 رفع PDF جديد
+                      📄 {t.uploadNewPDF}
                     </button>
                     <button
                       onClick={() => setInputMethod('manual')}
                       className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg transition-all duration-300 border border-gray-300"
                     >
-                      العودة للطريقة اليدوية
+                      {t.backToManual}
                     </button>
                   </div>
                 </div>
@@ -1264,8 +1300,8 @@ const FormPage = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">الطريقة التلقائية</h3>
-                  <p className="text-xs text-gray-600">رفع PDF واستخراج البيانات</p>
+                  <h3 className="text-sm font-semibold text-gray-800">{t.automaticMethod}</h3>
+                  <p className="text-xs text-gray-600">{t.reviewExtractedData}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1274,7 +1310,7 @@ const FormPage = () => {
                   }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg transition-all duration-300 text-sm"
                 >
-                  تغيير الطريقة
+                  {t.changeMethod}
                 </button>
               </div>
             </div>
@@ -1284,6 +1320,7 @@ const FormPage = () => {
             onDataExtracted={handlePDFDataExtracted}
             onImagesExtracted={handlePDFImagesExtracted}
             onClose={handlePDFProcessorClose}
+            language={language}
           />
         </div>
       )}

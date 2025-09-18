@@ -2,6 +2,267 @@
 
 import { useState, useRef } from 'react';
 
+// Translation dictionary
+const translations = {
+  en: {
+    title: 'PDF Document Processor',
+    stepUpload: 'Upload File',
+    stepSelectImages: 'Select Images',
+    stepUploadImages: 'Upload Images',
+    stepExtractData: 'Extract Data',
+    stepSave: 'Save Data',
+    step1Title: 'Step 1: Upload PDF File',
+    step2Title: 'Step 2: Select Images',
+    step3Title: 'Step 3: Upload Images to Digital Ocean',
+    step4Title: 'Step 4: Extract Data',
+    step5Title: 'Step 5: Save Data',
+    uploadPDF: 'Upload PDF File',
+    clickToSelect: 'Click to select or drag file here',
+    selectedFile: 'Selected file:',
+    processing: 'Processing...',
+    extractImagesFromPDF: 'Extract Images from PDF',
+    extractedImagesCount: 'Extracted {count} images from file. Please select two images:',
+    personalImage: 'Personal Image',
+    fullBodyImage: 'Full Body Image',
+    continueToExtract: 'Continue to Extract Data',
+    imagesSelectedSuccessfully: 'Images selected successfully. Click the button below to upload images to Digital Ocean.',
+    selectedImagesForUpload: 'Selected Images for Upload:',
+    uploadingImages: 'Uploading Images...',
+    uploadToDigitalOcean: 'Upload Images to Digital Ocean',
+    imagesSelectedForExtraction: 'Images selected successfully. Click the button below to extract data...',
+    selectedImages: 'Selected Images:',
+    extractingData: 'Extracting Data...',
+    extractDataWithGemini: 'Extract Data using Gemini',
+    modelUsed: 'Model Used:',
+    dataExtractedSuccessfully: 'Data extracted successfully using {model}',
+    tryingAgain: 'Trying Again...',
+    tryWithLatestModel: 'Try with Latest Model (Pro)',
+    extractedData: 'Extracted Data',
+    field: 'Field',
+    value: 'Value',
+    noDataExtracted: 'No data extracted',
+    uploadedImagesToDigitalOcean: 'Images Uploaded to Digital Ocean',
+    uploaded: 'Uploaded',
+    saving: 'Saving...',
+    saveData: 'Save Data',
+    restart: 'Restart',
+    dataExtractedSuccessfullyMessage: 'Data extracted successfully!',
+    uploadFailed: 'Failed to upload selected images: {error}',
+    pleaseSelectAtLeastOneImage: 'Please select at least one image to save',
+    noDataToSave: 'No data to save',
+    pleaseSelectBothImages: 'Please select both profile image and full image',
+    errorOccurred: 'An error occurred',
+    failedToExtractImages: 'Failed to extract images from PDF',
+    noImagesFound: 'No images found in the PDF',
+    failedToExtractData: 'Failed to extract data using Gemini',
+    errorOccurredDuringExtraction: 'An error occurred during data extraction',
+    errorOccurredDuringProModel: 'An error occurred during pro model extraction',
+    errorOccurredWhileSaving: 'An error occurred while saving',
+    latestModelUsed: 'Latest model used',
+    retryWithLatestModel: 'Retry with Latest Model (Pro)',
+    profileImageAlt: 'Profile image {index}',
+    fullImageAlt: 'Full image {index}',
+    personalImageAlt: 'Personal Image',
+    fullBodyImageAlt: 'Full Body Image'
+  },
+  fra: {
+    title: 'Processeur de Documents PDF',
+    stepUpload: 'Télécharger Fichier',
+    stepSelectImages: 'Sélectionner Images',
+    stepUploadImages: 'Télécharger Images',
+    stepExtractData: 'Extraire Données',
+    stepSave: 'Sauvegarder Données',
+    step1Title: 'Étape 1: Télécharger Fichier PDF',
+    step2Title: 'Étape 2: Sélectionner Images',
+    step3Title: 'Étape 3: Télécharger Images vers Digital Ocean',
+    step4Title: 'Étape 4: Extraire Données',
+    step5Title: 'Étape 5: Sauvegarder Données',
+    uploadPDF: 'Télécharger Fichier PDF',
+    clickToSelect: 'Cliquez pour sélectionner ou glissez le fichier ici',
+    selectedFile: 'Fichier sélectionné:',
+    processing: 'Traitement en cours...',
+    extractImagesFromPDF: 'Extraire Images du PDF',
+    extractedImagesCount: 'Extrait {count} images du fichier. Veuillez sélectionner deux images:',
+    personalImage: 'Image Personnelle',
+    fullBodyImage: 'Image Corps Entier',
+    continueToExtract: 'Continuer vers Extraction Données',
+    imagesSelectedSuccessfully: 'Images sélectionnées avec succès. Cliquez sur le bouton ci-dessous pour télécharger les images vers Digital Ocean.',
+    selectedImagesForUpload: 'Images Sélectionnées pour Téléchargement:',
+    uploadingImages: 'Téléchargement Images...',
+    uploadToDigitalOcean: 'Télécharger Images vers Digital Ocean',
+    imagesSelectedForExtraction: 'Images sélectionnées avec succès. Cliquez sur le bouton ci-dessous pour extraire les données...',
+    selectedImages: 'Images Sélectionnées:',
+    extractingData: 'Extraction Données...',
+    extractDataWithGemini: 'Extraire Données avec Gemini',
+    modelUsed: 'Modèle Utilisé:',
+    dataExtractedSuccessfully: 'Données extraites avec succès en utilisant {model}',
+    tryingAgain: 'Nouvelle Tentative...',
+    tryWithLatestModel: 'Essayer avec Modèle Plus Récent (Pro)',
+    extractedData: 'Données Extraites',
+    field: 'Champ',
+    value: 'Valeur',
+    noDataExtracted: 'Aucune donnée extraite',
+    uploadedImagesToDigitalOcean: 'Images Téléchargées vers Digital Ocean',
+    uploaded: 'Téléchargé',
+    saving: 'Sauvegarde...',
+    saveData: 'Sauvegarder Données',
+    restart: 'Recommencer',
+    dataExtractedSuccessfullyMessage: 'Données extraites avec succès!',
+    uploadFailed: 'Échec du téléchargement des images sélectionnées: {error}',
+    pleaseSelectAtLeastOneImage: 'Veuillez sélectionner au moins une image à sauvegarder',
+    noDataToSave: 'Aucune donnée à sauvegarder',
+    pleaseSelectBothImages: 'Veuillez sélectionner l\'image de profil et l\'image complète',
+    errorOccurred: 'Une erreur s\'est produite',
+    failedToExtractImages: 'Échec de l\'extraction des images du PDF',
+    noImagesFound: 'Aucune image trouvée dans le PDF',
+    failedToExtractData: 'Échec de l\'extraction des données avec Gemini',
+    errorOccurredDuringExtraction: 'Une erreur s\'est produite lors de l\'extraction des données',
+    errorOccurredDuringProModel: 'Une erreur s\'est produite lors de l\'extraction avec le modèle pro',
+    errorOccurredWhileSaving: 'Une erreur s\'est produite lors de la sauvegarde',
+    latestModelUsed: 'Modèle le plus récent utilisé',
+    retryWithLatestModel: 'Réessayer avec Modèle Plus Récent (Pro)',
+    profileImageAlt: 'Image de profil {index}',
+    fullImageAlt: 'Image complète {index}',
+    personalImageAlt: 'Image Personnelle',
+    fullBodyImageAlt: 'Image Corps Entier'
+  },
+  ur: {
+    title: 'PDF دستاویز پروسیسر',
+    stepUpload: 'فائل اپ لوڈ کریں',
+    stepSelectImages: 'تصاویر منتخب کریں',
+    stepUploadImages: 'تصاویر اپ لوڈ کریں',
+    stepExtractData: 'ڈیٹا نکالیں',
+    stepSave: 'ڈیٹا محفوظ کریں',
+    step1Title: 'مرحلہ 1: PDF فائل اپ لوڈ کریں',
+    step2Title: 'مرحلہ 2: تصاویر منتخب کریں',
+    step3Title: 'مرحلہ 3: Digital Ocean پر تصاویر اپ لوڈ کریں',
+    step4Title: 'مرحلہ 4: ڈیٹا نکالیں',
+    step5Title: 'مرحلہ 5: ڈیٹا محفوظ کریں',
+    uploadPDF: 'PDF فائل اپ لوڈ کریں',
+    clickToSelect: 'منتخب کرنے کے لیے کلک کریں یا فائل یہاں ڈریگ کریں',
+    selectedFile: 'منتخب شدہ فائل:',
+    processing: 'پروسیسنگ جاری ہے...',
+    extractImagesFromPDF: 'PDF سے تصاویر نکالیں',
+    extractedImagesCount: 'فائل سے {count} تصاویر نکالی گئیں۔ براہ کرم دو تصاویر منتخب کریں:',
+    personalImage: 'ذاتی تصویر',
+    fullBodyImage: 'مکمل جسم کی تصویر',
+    continueToExtract: 'ڈیٹا نکالنے کے لیے جاری رکھیں',
+    imagesSelectedSuccessfully: 'تصاویر کامیابی سے منتخب ہو گئیں۔ Digital Ocean پر تصاویر اپ لوڈ کرنے کے لیے نیچے دیے گئے بٹن پر کلک کریں۔',
+    selectedImagesForUpload: 'اپ لوڈ کے لیے منتخب شدہ تصاویر:',
+    uploadingImages: 'تصاویر اپ لوڈ ہو رہی ہیں...',
+    uploadToDigitalOcean: 'Digital Ocean پر تصاویر اپ لوڈ کریں',
+    imagesSelectedForExtraction: 'تصاویر کامیابی سے منتخب ہو گئیں۔ ڈیٹا نکالنے کے لیے نیچے دیے گئے بٹن پر کلک کریں...',
+    selectedImages: 'منتخب شدہ تصاویر:',
+    extractingData: 'ڈیٹا نکالا جا رہا ہے...',
+    extractDataWithGemini: 'Gemini استعمال کرتے ہوئے ڈیٹا نکالیں',
+    modelUsed: 'استعمال شدہ ماڈل:',
+    dataExtractedSuccessfully: '{model} استعمال کرتے ہوئے ڈیٹا کامیابی سے نکالا گیا',
+    tryingAgain: 'دوبارہ کوشش کر رہے ہیں...',
+    tryWithLatestModel: 'تازہ ترین ماڈل کے ساتھ کوشش کریں (Pro)',
+    extractedData: 'نکالا گیا ڈیٹا',
+    field: 'فیلڈ',
+    value: 'قیمت',
+    noDataExtracted: 'کوئی ڈیٹا نہیں نکالا گیا',
+    uploadedImagesToDigitalOcean: 'Digital Ocean پر اپ لوڈ شدہ تصاویر',
+    uploaded: 'اپ لوڈ شدہ',
+    saving: 'محفوظ ہو رہا ہے...',
+    saveData: 'ڈیٹا محفوظ کریں',
+    restart: 'دوبارہ شروع کریں',
+    dataExtractedSuccessfullyMessage: 'ڈیٹا کامیابی سے نکالا گیا!',
+    uploadFailed: 'منتخب شدہ تصاویر اپ لوڈ کرنے میں ناکامی: {error}',
+    pleaseSelectAtLeastOneImage: 'محفوظ کرنے کے لیے کم از کم ایک تصویر منتخب کریں',
+    noDataToSave: 'محفوظ کرنے کے لیے کوئی ڈیٹا نہیں',
+    pleaseSelectBothImages: 'براہ کرم پروفائل تصویر اور مکمل تصویر دونوں منتخب کریں',
+    errorOccurred: 'ایک خرابی ہوئی',
+    failedToExtractImages: 'PDF سے تصاویر نکالنے میں ناکامی',
+    noImagesFound: 'PDF میں کوئی تصویر نہیں ملی',
+    failedToExtractData: 'Gemini استعمال کرتے ہوئے ڈیٹا نکالنے میں ناکامی',
+    errorOccurredDuringExtraction: 'ڈیٹا نکالنے کے دوران خرابی ہوئی',
+    errorOccurredDuringProModel: 'Pro ماڈل نکالنے کے دوران خرابی ہوئی',
+    errorOccurredWhileSaving: 'محفوظ کرتے وقت خرابی ہوئی',
+    latestModelUsed: 'تازہ ترین ماڈل استعمال شدہ',
+    retryWithLatestModel: 'تازہ ترین ماڈل کے ساتھ دوبارہ کوشش کریں (Pro)',
+    profileImageAlt: 'پروفائل تصویر {index}',
+    fullImageAlt: 'مکمل تصویر {index}',
+    personalImageAlt: 'ذاتی تصویر',
+    fullBodyImageAlt: 'مکمل جسم کی تصویر'
+  },
+  ar: {
+    title: 'معالج المستندات PDF',
+    stepUpload: 'رفع الملف',
+    stepSelectImages: 'اختيار الصور',
+    stepUploadImages: 'رفع الصور',
+    stepExtractData: 'استخراج البيانات',
+    stepSave: 'حفظ البيانات',
+    step1Title: 'الخطوة 1: رفع ملف PDF',
+    step2Title: 'الخطوة 2: اختيار الصور',
+    step3Title: 'الخطوة 3: رفع الصور إلى Digital Ocean',
+    step4Title: 'الخطوة 4: استخراج البيانات',
+    step5Title: 'الخطوة 5: حفظ البيانات',
+    uploadPDF: 'رفع ملف PDF',
+    clickToSelect: 'اضغط للاختيار أو اسحب الملف هنا',
+    selectedFile: 'الملف المختار:',
+    processing: 'جاري المعالجة...',
+    extractImagesFromPDF: 'استخراج الصور من PDF',
+    extractedImagesCount: 'تم استخراج {count} صورة من الملف. يرجى اختيار صورتين:',
+    personalImage: '{t.personalImage}',
+    fullBodyImage: '{t.fullBodyImage}',
+    continueToExtract: 'المتابعة لاستخراج البيانات',
+    imagesSelectedSuccessfully: 'تم اختيار الصور بنجاح. اضغط على الزر أدناه لرفع الصور إلى Digital Ocean.',
+    selectedImagesForUpload: 'الصور المختارة للرفع:',
+    uploadingImages: 'جاري رفع الصور...',
+    uploadToDigitalOcean: 'رفع الصور إلى Digital Ocean',
+    imagesSelectedForExtraction: 'تم اختيار الصور بنجاح. اضغط على الزر أدناه لاستخراج البيانات...',
+    selectedImages: 'الصور المختارة:',
+    extractingData: 'جاري استخراج البيانات...',
+    extractDataWithGemini: 'استخراج البيانات باستخدام Gemini',
+    modelUsed: 'النموذج المستخدم:',
+    dataExtractedSuccessfully: 'تم استخراج البيانات بنجاح باستخدام {model}',
+    tryingAgain: 'جاري المحاولة...',
+    tryWithLatestModel: 'جرب بالنموذج الأحدث (Pro)',
+    extractedData: 'البيانات المستخرجة',
+    field: 'الحقل',
+    value: 'القيمة',
+    noDataExtracted: 'لم يتم استخراج أي بيانات',
+    uploadedImagesToDigitalOcean: 'الصور المرفوعة إلى Digital Ocean',
+    uploaded: 'مرفوعة',
+    saving: 'جاري الحفظ...',
+    saveData: 'حفظ البيانات',
+    restart: 'إعادة البدء',
+    dataExtractedSuccessfullyMessage: 'تم استخراج البيانات بنجاح!',
+    uploadFailed: 'فشل في رفع الصور المختارة: {error}',
+    pleaseSelectAtLeastOneImage: 'يرجى اختيار صورة واحدة على الأقل',
+    noDataToSave: 'لا توجد بيانات للحفظ',
+    pleaseSelectBothImages: 'يرجى اختيار {t.personalImage} و{t.fullBodyImage}',
+    errorOccurred: 'حدث خطأ',
+    failedToExtractImages: 'فشل في استخراج الصور من PDF',
+    noImagesFound: 'لم يتم العثور على صور في PDF',
+    failedToExtractData: 'فشل في استخراج البيانات باستخدام Gemini',
+    errorOccurredDuringExtraction: 'حدث خطأ أثناء استخراج البيانات',
+    errorOccurredDuringProModel: 'حدث خطأ أثناء استخراج البيانات بالنموذج المحسن',
+    errorOccurredWhileSaving: 'حدث خطأ أثناء الحفظ',
+    latestModelUsed: 'تم استخدام النموذج الأحدث',
+    retryWithLatestModel: 'جرب بالنموذج الأحدث (Pro)',
+    profileImageAlt: 'صورة شخصية {index}',
+    fullImageAlt: 'صورة بالطول {index}',
+    personalImageAlt: '{t.personalImage}',
+    fullBodyImageAlt: '{t.fullBodyImage}'
+  }
+};
+
+// Helper function to get translation with fallback
+const getTranslation = (key: string, lang: string = 'ar', params: Record<string, any> = {}) => {
+  const t = translations[lang as keyof typeof translations] || translations.ar;
+  let text = t[key as keyof typeof t] || key;
+  
+  // Replace parameters in the text
+  Object.keys(params).forEach(param => {
+    text = text.replace(`{${param}}`, params[param]);
+  });
+  
+  return text;
+};
+
 interface ExtractedData {
   jsonResponse: Record<string, string>;
 }
@@ -16,9 +277,13 @@ interface PDFProcessorProps {
   onDataExtracted: (data: any) => void;
   onImagesExtracted: (images: string[]) => void;
   onClose: () => void;
+  language?: string;
 }
 
-export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClose }: PDFProcessorProps) {
+export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClose, language = 'ar' }: PDFProcessorProps) {
+  // Get translations for the current language
+  const t = translations[language as keyof typeof translations] || translations.ar;
+  
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
@@ -102,7 +367,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
 
   const handleImageSelection = () => {
     if (!selectedProfileImage || !selectedFullImage) {
-      setError('Please select both profile image and full image');
+      setError(t.pleaseSelectBothImages);
       return;
     }
 
@@ -112,7 +377,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
 
   const uploadSelectedImages = async () => {
     if (selectedImages.length === 0) {
-      setError('يرجى اختيار صورة واحدة على الأقل');
+      setError(t.pleaseSelectAtLeastOneImage);
       return;
     }
 
@@ -174,7 +439,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
       setCurrentStep('extract-data');
     } catch (error: any) {
       console.error('Error uploading images:', error);
-      setError(`فشل في رفع الصور المختارة: ${error.message}`);
+      setError(t.uploadFailed.replace('{error}', error.message));
     } finally {
       setIsUploadingImages(false);
     }
@@ -243,12 +508,12 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
 
   const handleSave = async () => {
     if (!processingResult) {
-      setError('No data to save');
+      setError(t.noDataToSave);
       return;
     }
 
     if (selectedImages.length === 0) {
-      setError('Please select at least one image to save');
+      setError(t.pleaseSelectAtLeastOneImage);
       return;
     }
 
@@ -317,7 +582,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
       onDataExtracted(mappedData);
       onImagesExtracted(uploadedImageUrls.length > 0 ? uploadedImageUrls : selectedImages);
       
-      setSaveMessage('تم استخراج البيانات بنجاح!');
+      setSaveMessage(t.dataExtractedSuccessfullyMessage);
       
       // Close the modal after a short delay
       setTimeout(() => {
@@ -354,7 +619,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
         <div className="px-6 py-8 sm:p-10">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-extrabold text-gray-900 text-right">
-              معالج المستندات PDF
+              {t.title}
             </h1>
             <button
               onClick={onClose}
@@ -368,11 +633,11 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           <div className="mb-10">
             <div className="flex justify-between items-center">
               {[
-                { step: 'upload', label: 'رفع الملف' },
-                { step: 'select-images', label: 'اختيار الصور' },
-                { step: 'upload-images', label: 'رفع الصور' },
-                { step: 'extract-data', label: 'استخراج البيانات' },
-                { step: 'save', label: 'حفظ البيانات' },
+                { step: 'upload', label: t.stepUpload },
+                { step: 'select-images', label: t.stepSelectImages },
+                { step: 'upload-images', label: t.stepUploadImages },
+                { step: 'extract-data', label: t.stepExtractData },
+                { step: 'save', label: t.stepSave },
               ].map(({ step, label }, index) => (
                 <div
                   key={step}
@@ -407,7 +672,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           {currentStep === 'upload' && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-5 text-right">
-                الخطوة 1: رفع ملف PDF
+                {t.step1Title}
               </h2>
               <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 bg-gray-50 hover:border-indigo-300 transition-all duration-300">
                 <div className="text-center">
@@ -431,10 +696,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                       className="cursor-pointer inline-block"
                     >
                       <span className="block text-base font-semibold text-gray-900">
-                        رفع ملف PDF
+                        {t.uploadPDF}
                       </span>
                       <span className="block text-sm text-gray-500 mt-1">
-                        اضغط للاختيار أو اسحب الملف هنا
+                        {t.clickToSelect}
                       </span>
                     </label>
                     <input
@@ -450,7 +715,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   </div>
                   {file && (
                     <p className="mt-3 text-sm text-green-600 font-medium">
-                      الملف المختار: {file.name}
+                      {t.selectedFile} {file.name}
                     </p>
                   )}
                 </div>
@@ -492,10 +757,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        جاري المعالجة...
+                        {t.processing}
                       </>
                     ) : (
-                      'استخراج الصور من PDF'
+                      t.extractImagesFromPDF
                     )}
                   </button>
                 </div>
@@ -507,17 +772,17 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           {currentStep === 'select-images' && processingResult && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-5 text-right">
-                الخطوة 2: اختيار الصور
+                {t.step2Title}
               </h2>
               <p className="text-sm text-gray-600 mb-6 text-right">
-                تم استخراج {processingResult.extractedImages.length} صورة من الملف. يرجى اختيار صورتين:
+                {t.extractedImagesCount.replace('{count}', processingResult.extractedImages.length.toString())}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Profile Image Selection */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4 text-right">
-                    الصورة الشخصية
+                    {t.personalImage}
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {processingResult.extractedImages.map((imageUrl, index) => (
@@ -534,7 +799,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                       >
                         <img
                           src={imageUrl}
-                          alt={`صورة شخصية ${index + 1}`}
+                          alt={t.profileImageAlt.replace('{index}', (index + 1).toString())}
                           className="w-full h-40 object-cover"
                         />
                         <div className="absolute top-3 right-3">
@@ -565,7 +830,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                 {/* Full Image Selection */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4 text-right">
-                    الصورة بالطول
+                    {t.fullBodyImage}
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {processingResult.extractedImages.map((imageUrl, index) => (
@@ -582,7 +847,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                       >
                         <img
                           src={imageUrl}
-                          alt={`صورة بالطول ${index + 1}`}
+                          alt={t.fullImageAlt.replace('{index}', (index + 1).toString())}
                           className="w-full h-40 object-cover"
                         />
                         <div className="absolute top-3 right-3">
@@ -623,7 +888,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   disabled={!selectedProfileImage || !selectedFullImage}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 >
-                  المتابعة لاستخراج البيانات
+                  {t.continueToExtract}
                 </button>
               </div>
             </div>
@@ -633,30 +898,30 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           {currentStep === 'upload-images' && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-5 text-right">
-                الخطوة 3: رفع الصور إلى Digital Ocean
+                {t.step3Title}
               </h2>
               <p className="text-sm text-gray-600 mb-6 text-right">
-                تم اختيار الصور بنجاح. اضغط على الزر أدناه لرفع الصور إلى Digital Ocean.
+                {t.imagesSelectedSuccessfully}
               </p>
               
               <div className="bg-gray-50 rounded-xl p-6 mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-3 text-right">
-                  الصور المختارة للرفع:
+                  {t.selectedImagesForUpload}
                 </h3>
                 <div className="flex space-x-6 justify-end">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">الصورة الشخصية</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.personalImage}</p>
                     <img
                       src={selectedProfileImage}
-                      alt="الصورة الشخصية"
+                      alt="{t.personalImage}"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">الصورة بالطول</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.fullBodyImage}</p>
                     <img
                       src={selectedFullImage}
-                      alt="الصورة بالطول"
+                      alt="{t.fullBodyImage}"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
@@ -698,10 +963,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      جاري رفع الصور...
+                      {t.uploadingImages}
                     </>
                   ) : (
-                    'رفع الصور إلى Digital Ocean'
+                    t.uploadToDigitalOcean
                   )}
                 </button>
               </div>
@@ -712,30 +977,30 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           {currentStep === 'extract-data' && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-5 text-right">
-                الخطوة 4: استخراج البيانات
+                {t.step4Title}
               </h2>
               <p className="text-sm text-gray-600 mb-6 text-right">
-                تم اختيار الصور بنجاح. اضغط على الزر أدناه لاستخراج البيانات ..
+                {t.imagesSelectedForExtraction}
               </p>
 
               <div className="bg-gray-50 rounded-xl p-6 mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-3 text-right">
-                  الصور المختارة:
+                  {t.selectedImages}
                 </h3>
                 <div className="flex space-x-6 justify-end">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">الصورة الشخصية</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.personalImage}</p>
                     <img
                       src={selectedProfileImage}
-                      alt="الصورة الشخصية"
+                      alt="{t.personalImage}"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">الصورة بالطول</p>
+                    <p className="text-sm text-gray-600 mb-2">{t.fullBodyImage}</p>
                     <img
                       src={selectedFullImage}
-                      alt="الصورة بالطول"
+                      alt="{t.fullBodyImage}"
                       className="w-24 h-24 object-cover rounded-lg shadow-sm"
                     />
                   </div>
@@ -777,10 +1042,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      جاري استخراج البيانات...
+                      {t.extractingData}
                     </>
                   ) : (
-                    'استخراج البيانات باستخدام Gemini'
+                    t.extractDataWithGemini
                   )}
                 </button>
               </div>
@@ -791,7 +1056,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
           {currentStep === 'save' && processingResult && processingResult.geminiData && processingResult.geminiData.jsonResponse && (
             <div className="mb-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-5 text-right">
-                الخطوة 5: حفظ البيانات
+                {t.step5Title}
               </h2>
 
               {/* Model Information and Retry Button */}
@@ -800,10 +1065,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   <div className="flex justify-between items-center">
                     <div className="text-right">
                       <p className="text-sm font-medium text-blue-900">
-                        النموذج المستخدم: {currentModel}
+                        {t.modelUsed} {currentModel}
                       </p>
                       <p className="text-xs text-blue-600 mt-1">
-                        تم استخراج البيانات بنجاح باستخدام {currentModel}
+                        {t.dataExtractedSuccessfully.replace('{model}', currentModel)}
                       </p>
                     </div>
                     <button
@@ -834,12 +1099,12 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          جاري المحاولة...
+                          {t.tryingAgain}
                         </>
                       ) : currentModel === 'gemini-2.0-flash-exp' ? (
-                        'تم استخدام النموذج الأحدث'
+                        t.latestModelUsed
                       ) : (
-                        'جرب بالنموذج الأحدث (Pro)'
+                        t.tryWithLatestModel
                       )}
                     </button>
                   </div>
@@ -849,7 +1114,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
               {/* Extracted Data Display */}
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4 text-right">
-                  البيانات المستخرجة
+                  {t.extractedData}
                 </h3>
                 <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
                   {Object.keys(processingResult.geminiData.jsonResponse).length > 0 ? (
@@ -858,10 +1123,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                         <thead>
                           <tr className="bg-gray-100">
                             <th className="border border-gray-200 px-4 py-3 font-semibold text-gray-900">
-                              الحقل
+                              {t.field}
                             </th>
                             <th className="border border-gray-200 px-4 py-3 font-semibold text-gray-900">
-                              القيمة
+                              {t.value}
                             </th>
                           </tr>
                         </thead>
@@ -911,7 +1176,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                     </div>
                   ) : (
                     <p className="text-gray-500 text-sm text-right">
-                      لم يتم استخراج أي بيانات
+                      {t.noDataExtracted}
                     </p>
                   )}
                 </div>
@@ -920,30 +1185,30 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
               {/* Selected Images Summary */}
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4 text-right">
-                  الصور المرفوعة إلى Digital Ocean
+                  {t.uploadedImagesToDigitalOcean}
                 </h3>
                 <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
                   <div className="flex space-x-6 justify-end">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">الصورة الشخصية</p>
+                      <p className="text-sm text-gray-600 mb-2">{t.personalImage}</p>
                       <img
                         src={uploadedImageUrls[0] || selectedProfileImage}
-                        alt="الصورة الشخصية"
+                        alt="{t.personalImage}"
                         className="w-28 h-28 object-cover rounded-lg shadow-sm"
                       />
                       {uploadedImageUrls[0] && (
-                        <p className="text-xs text-green-600 mt-1">✓ مرفوعة</p>
+                        <p className="text-xs text-green-600 mt-1">✓ {t.uploaded}</p>
                       )}
                     </div>
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">الصورة بالطول</p>
+                      <p className="text-sm text-gray-600 mb-2">{t.fullBodyImage}</p>
                       <img
                         src={uploadedImageUrls[1] || selectedFullImage}
-                        alt="الصورة بالطول"
+                        alt="{t.fullBodyImage}"
                         className="w-28 h-28 object-cover rounded-lg shadow-sm"
                       />
                       {uploadedImageUrls[1] && (
-                        <p className="text-xs text-green-600 mt-1">✓ مرفوعة</p>
+                        <p className="text-xs text-green-600 mt-1">✓ {t.uploaded}</p>
                       )}
                     </div>
                   </div>
@@ -985,10 +1250,10 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      جاري الحفظ...
+                      {t.saving}
                     </>
                   ) : (
-                    'حفظ البيانات'
+                    t.saveData
                   )}
                 </button>
 
@@ -996,7 +1261,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   onClick={resetForm}
                   className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
                 >
-                  إعادة البدء
+                  {t.restart}
                 </button>
               </div>
 
