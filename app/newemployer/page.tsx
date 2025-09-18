@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
+import PDFProcessor from '../components/PDFProcessor';
 import imageCompression from 'browser-image-compression';
 import AWS from 'aws-sdk';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -38,6 +39,15 @@ const translations = {
       PassportEnd: 'Passport End Date',
       salary: 'Salary in USD',
       experienceYears: 'Experience (Years)',
+      // Additional fields
+      age: 'Age',
+      birthPlace: 'Birth Place',
+      passportNumber: 'Passport Number',
+      jobTitle: 'Job Title',
+      livingTown: 'Living Town',
+      childrenCount: 'Children Count',
+      weight: 'Weight',
+      height: 'Height',
       languageSkills: {
         arabic: 'Arabic Proficiency',
         english: 'English Proficiency',
@@ -64,6 +74,15 @@ const translations = {
       PassportEnd: 'Passport expiry date',
       salary: 'Expected monthly salary',
       experienceYears: 'Relevant years of experience',
+      // Additional tooltips
+      age: 'Current age in years',
+      birthPlace: 'City/country of birth',
+      passportNumber: 'Passport number',
+      jobTitle: 'Current or desired job title',
+      livingTown: 'Current city of residence',
+      childrenCount: 'Number of children',
+      weight: 'Weight in kg',
+      height: 'Height in cm',
       languageSkills: 'Proficiency level',
       skills: 'Skill level',
     },
@@ -85,6 +104,13 @@ const translations = {
       imageCompressionFailed: 'Failed to compress image.',
       invalidFileType: 'Invalid file type. Please upload JPEG or PNG.',
       imageSizeExceeded: 'Image size exceeds 32MB.',
+      // Additional error messages
+      age: 'Age is required',
+      birthPlace: 'Birth place is required',
+      passportNumber: 'Passport number is required',
+      livingTown: 'Living town is required',
+      weight: 'Weight is required',
+      height: 'Height is required',
     },
   },
   fra: {
@@ -248,7 +274,7 @@ const translations = {
 };
 
 const FormPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     Name: '',
     Religion: '',
     nationality: '',
@@ -265,23 +291,34 @@ const FormPage = () => {
     skills: { laundry: '', ironing: '', cleaning: '', cooking: '', sewing: '', babySitting: '' },
     fullBodyImage: '',
     personalImage: '',
+    // Additional fields
+    age: '',
+    birthPlace: '',
+    passportNumber: '',
+    jobTitle: '',
+    livingTown: '',
+    childrenCount: '',
+    weight: '',
+    height: '',
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<any>({});
   const [response, setResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState({ fullBody: null, personal: null });
-  const [imageErrors, setImageErrors] = useState({ fullBody: '', personal: '' });
+  const [imagePreviews, setImagePreviews] = useState<any>({ fullBody: null, personal: null });
+  const [imageErrors, setImageErrors] = useState<any>({ fullBody: '', personal: '' });
   const [formProgress, setFormProgress] = useState(0);
-  const [expandedSections, setExpandedSections] = useState({
+  const [expandedSections, setExpandedSections] = useState<any>({
     images: true,
     personal: true,
     passport: true,
     skills: true,
   });
-  const fullBodyInputRef = useRef(null);
-  const personalInputRef = useRef(null);
+  const fullBodyInputRef = useRef<any>(null);
+  const personalInputRef = useRef<any>(null);
   const [width, setWidth] = useState(0);
+  const [showPDFProcessor, setShowPDFProcessor] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   const { language } = useLanguage();
   // Fallback to English if language is invalid
@@ -327,7 +364,7 @@ const FormPage = () => {
 
   // Validate Form
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: any = {};
     if (!formData.Name.trim()) newErrors.Name = t.errors.Name;
     if (!formData.nationality.trim()) newErrors.nationality = t.errors.nationality;
     if (!formData.phone.trim()) newErrors.phone = t.errors.phone;
@@ -335,6 +372,14 @@ const FormPage = () => {
     if (!formData.dateOfbirth) newErrors.dateOfbirth = t.errors.dateOfbirth;
     if (!formData.fullBodyImage) newErrors.fullBodyImage = t.errors.fullBodyImage;
     if (!formData.personalImage) newErrors.personalImage = t.errors.personalImage;
+    
+    // Validate additional required fields
+    if (!formData.age.trim()) newErrors.age = t.errors.age;
+    if (!formData.birthPlace.trim()) newErrors.birthPlace = t.errors.birthPlace;
+    if (!formData.passportNumber.trim()) newErrors.passportNumber = t.errors.passportNumber;
+    if (!formData.livingTown.trim()) newErrors.livingTown = t.errors.livingTown;
+    if (!formData.weight.trim()) newErrors.weight = t.errors.weight;
+    if (!formData.height.trim()) newErrors.height = t.errors.height;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
@@ -373,7 +418,7 @@ const FormPage = () => {
   };
 
   // Compress Image
-  const compressImage = async (file) => {
+  const compressImage = async (file: any) => {
     const options = {
       maxSizeMB: 1,
       maxWidthOrHeight: 1920,
@@ -388,7 +433,7 @@ const FormPage = () => {
   };
 
   // Upload Image to DigitalOcean Spaces
-  const uploadImageToDigitalOcean = async (file, type) => {
+  const uploadImageToDigitalOcean = async (file: any, type: any) => {
     const fileName = `${Date.now()}.jpg`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -416,30 +461,30 @@ const FormPage = () => {
   };
 
   // Handle Image Upload
-  const handleImageUpload = async (e, type) => {
+  const handleImageUpload = async (e: any, type: any) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
       const compressedFile = await compressImage(file);
       const imageUrl = await uploadImageToDigitalOcean(compressedFile, type);
-      setFormData((prev) => ({ ...prev, [`${type}Image`]: imageUrl }));
-      setImagePreviews((prev) => ({ ...prev, [type]: URL.createObjectURL(file) }));
-      setImageErrors((prev) => ({ ...prev, [type]: '' }));
-    } catch (error) {
-      setImageErrors((prev) => ({ ...prev, [type]: error.message }));
+      setFormData((prev: any) => ({ ...prev, [`${type}Image`]: imageUrl }));
+      setImagePreviews((prev: any) => ({ ...prev, [type]: URL.createObjectURL(file) }));
+      setImageErrors((prev: any) => ({ ...prev, [type]: '' }));
+    } catch (error: any) {
+      setImageErrors((prev: any) => ({ ...prev, [type]: error.message }));
     }
   };
 
   // Handle Form Submission
-  const postNewEmployer = async (e) => {
+  const postNewEmployer = async (e: any) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
       const storage = localStorage.getItem('_item');
-      const newData = await fetch('/api/newemployer', {
+      const newData = await fetch('/api/save-automatic-employee', {
         method: 'POST',
         headers: {
           authorization: `bearer ${storage}`,
@@ -449,7 +494,7 @@ const FormPage = () => {
         body: JSON.stringify(formData),
       });
       const post = await newData.json();
-      if (newData.status === 201) {
+      if (newData.status === 200) {
         setResponse(post);
         setFormData({
           Name: '',
@@ -468,42 +513,51 @@ const FormPage = () => {
           skills: { laundry: '', ironing: '', cleaning: '', cooking: '', sewing: '', babySitting: '' },
           fullBodyImage: '',
           personalImage: '',
+          // Additional fields
+          age: '',
+          birthPlace: '',
+          passportNumber: '',
+          jobTitle: '',
+          livingTown: '',
+          childrenCount: '',
+          weight: '',
+          height: '',
         });
         setImagePreviews({ fullBody: null, personal: null });
-        fullBodyInputRef.current.value = null;
-        personalInputRef.current.value = null;
+        if (fullBodyInputRef.current) fullBodyInputRef.current.value = null;
+        if (personalInputRef.current) personalInputRef.current.value = null;
       } else {
-        alert(t.errors.submitFailed || 'Submission failed. Please try again.');
+        alert('Submission failed. Please try again.');
       }
     } catch (error) {
-      alert(t.errors.submitError || 'An error occurred. Please try again.');
+      alert('An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // Handle Input Changes
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     const { name, value } = e.target;
     if (name.includes('languageSkills.')) {
       const lang = name.split('.')[1];
-      setFormData((prevData) => ({
+      setFormData((prevData: any) => ({
         ...prevData,
         languageSkills: { ...prevData.languageSkills, [lang]: value },
       }));
     } else if (name.includes('skills.')) {
       const skill = name.split('.')[1];
-      setFormData((prevData) => ({
+      setFormData((prevData: any) => ({
         ...prevData,
         skills: { ...prevData.skills, [skill]: value },
       }));
     } else {
-      setFormData((prevData) => ({
+      setFormData((prevData: any) => ({
         ...prevData,
         [name]: value,
       }));
     }
-    setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
+    setErrors((prevErrors: any) => ({ ...prevErrors, [name]: '' }));
   };
 
   // Handle Window Resize
@@ -515,17 +569,17 @@ const FormPage = () => {
   }, []);
 
   // Drag and Drop Handlers
-  const handleDragOver = (e, type) => {
+  const handleDragOver = (e: any, type: any) => {
     e.preventDefault();
     e.currentTarget.classList.add('border-gray-500', 'bg-gray-100');
   };
 
-  const handleDragLeave = (e, type) => {
+  const handleDragLeave = (e: any, type: any) => {
     e.preventDefault();
     e.currentTarget.classList.remove('border-gray-500', 'bg-gray-100');
   };
 
-  const handleDrop = async (e, type) => {
+  const handleDrop = async (e: any, type: any) => {
     e.preventDefault();
     e.currentTarget.classList.remove('border-gray-500', 'bg-gray-100');
     const file = e.dataTransfer.files[0];
@@ -536,8 +590,94 @@ const FormPage = () => {
   };
 
   // Toggle Section
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  const toggleSection = (section: any) => {
+    setExpandedSections((prev: any) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Handle PDF Data Extraction
+  const handlePDFDataExtracted = (extractedData: any) => {
+    // Validate extracted data first
+    const validationErrors = validateExtractedData(extractedData);
+    
+    // Store missing fields for visual indication
+    setMissingFields(validationErrors);
+    
+    if (validationErrors.length > 0) {
+      // Show validation errors to user
+      alert(`تم استخراج البيانات بنجاح!\n\nالبيانات التالية مفقودة أو غير صحيحة:\n${validationErrors.join('\n')}\n\nيرجى مراجعة البيانات المستخرجة وإكمال الحقول المفقودة.`);
+    }
+    
+    setFormData((prevData: any) => ({
+      ...prevData,
+      ...extractedData
+    }));
+    setShowPDFProcessor(false);
+  };
+
+  // Handle PDF Images Extracted
+  const handlePDFImagesExtracted = (images: any) => {
+    if (images.length >= 2) {
+      setFormData((prevData: any) => ({
+        ...prevData,
+        personalImage: images[0],
+        fullBodyImage: images[1]
+      }));
+      setImagePreviews({
+        personal: images[0],
+        fullBody: images[1]
+      });
+    }
+  };
+
+  // Handle PDF Processor Close
+  const handlePDFProcessorClose = () => {
+    setShowPDFProcessor(false);
+  };
+
+  // دالة التحقق من صحة البيانات المستخرجة
+  const validateExtractedData = (data: any): string[] => {
+    const errors: string[] = [];
+    
+    // Required fields validation
+    const requiredFields = [
+      { key: 'Name', label: 'الاسم الكامل' },
+      { key: 'dateOfbirth', label: 'تاريخ الميلاد' },
+      { key: 'age', label: 'العمر' },
+      { key: 'nationality', label: 'الجنسية' },
+      { key: 'birthPlace', label: 'مكان الميلاد' },
+      { key: 'PassportStart', label: 'تاريخ إصدار جواز السفر' },
+      { key: 'PassportEnd', label: 'تاريخ انتهاء جواز السفر' },
+      { key: 'Religion', label: 'الدين' },
+      { key: 'passportNumber', label: 'رقم جواز السفر' },
+      { key: 'salary', label: 'الراتب' },
+      { key: 'livingTown', label: 'المدينة' },
+      { key: 'childrenCount', label: 'عدد الأطفال' },
+      { key: 'weight', label: 'الوزن' },
+      { key: 'height', label: 'الطول' },
+      { key: 'maritalStatus', label: 'الحالة الاجتماعية' }
+    ];
+
+    requiredFields.forEach(field => {
+      if (!data[field.key] || data[field.key].toString().trim() === '') {
+        errors.push(field.label);
+      }
+    });
+
+    // Validate skills
+    const skills = data.skills || {};
+    const hasAnySkill = Object.values(skills).some((skill: any) => skill && skill.toString().trim() !== '');
+    if (!hasAnySkill) {
+      errors.push('المهارات');
+    }
+
+    // Validate languages
+    const languages = data.languageSkills || {};
+    const hasAnyLanguage = Object.values(languages).some((lang: any) => lang && lang.toString().trim() !== '');
+    if (!hasAnyLanguage) {
+      errors.push('اللغات');
+    }
+
+    return errors;
   };
 
   return (
@@ -567,24 +707,70 @@ const FormPage = () => {
             </div>
           )}
 
+          {/* Missing Fields Warning */}
+          {missingFields.length > 0 && (
+            <div className="mb-8 p-4 bg-yellow-100 border border-yellow-400 rounded-lg animate-fade-in">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="mr-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    بيانات مفقودة من استخراج PDF
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p className="mb-2">يرجى إكمال الحقول التالية:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {missingFields.map((field, index) => (
+                        <li key={index} className="font-medium">{field}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMissingFields([])}
+                    className="text-yellow-400 hover:text-yellow-600"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={postNewEmployer} className="space-y-8">
             {/* Image Upload Section */}
             <div className="bg-gray-50 rounded-2xl p-6 transition-all duration-300">
-              <button
-                type="button"
-                onClick={() => toggleSection('images')}
-                className="w-full flex justify-between items-center text-2xl font-semibold text-gray-700 mb-4"
-              >
-                <span>{t.imagesSection}</span>
-                <svg
-                  className={`w-6 h-6 transform transition-transform ${expandedSections.images ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('images')}
+                  className="flex justify-between items-center text-2xl font-semibold text-gray-700 flex-1"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <span>{t.imagesSection}</span>
+                  <svg
+                    className={`w-6 h-6 transform transition-transform ${expandedSections.images ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPDFProcessor(true)}
+                  className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 text-sm font-medium"
+                >
+                  📄 استخراج من PDF
+                </button>
+              </div>
               {expandedSections.images && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-slide-in">
                   {['fullBody', 'personal'].map((type, index) => (
@@ -682,31 +868,40 @@ const FormPage = () => {
                     { name: 'Religion', type: 'text', tooltip: t.tooltips.Religion },
                     { name: 'phone', type: 'text', required: true, tooltip: t.tooltips.phone },
                     { name: 'email', type: 'email', required: true, tooltip: t.tooltips.email },
-                    { name: 'dateOfbirth', type: 'date', required: true, tooltip: t.tooltips.dateOfirth },
+                    { name: 'dateOfbirth', type: 'date', required: true, tooltip: t.tooltips.dateOfbirth },
                     { name: 'maritalStatus', type: 'text', tooltip: t.tooltips.maritalStatus },
                     { name: 'education', type: 'text', tooltip: t.tooltips.education },
+                    // Additional fields
+                    { name: 'age', type: 'text', required: true, tooltip: 'العمر' },
+                    { name: 'birthPlace', type: 'text', required: true, tooltip: 'مكان الميلاد' },
+                    { name: 'passportNumber', type: 'text', required: true, tooltip: 'رقم جواز السفر' },
+                    { name: 'jobTitle', type: 'text', tooltip: 'المسمى الوظيفي' },
+                    { name: 'livingTown', type: 'text', required: true, tooltip: 'المدينة' },
+                    { name: 'childrenCount', type: 'text', tooltip: 'عدد الأطفال' },
+                    { name: 'weight', type: 'text', required: true, tooltip: 'الوزن' },
+                    { name: 'height', type: 'text', required: true, tooltip: 'الطول' },
                   ].map((field, index) => (
                     <div key={field.name} className="relative group" style={{ animationDelay: `${index * 100}ms` }}>
                       <div className="relative">
                         <input
                           type={field.type}
                           name={field.name}
-                          value={formData[field.name]}
+                          value={(formData as any)[field.name]}
                           onChange={handleChange}
                           className={`peer w-full p-3 pt-5 bg-white border ${
                             errors[field.name] ? 'border-red-500' : 'border-gray-300'
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent`}
-                          placeholder={t.fields[field.name]}
+                          placeholder={(t.fields as any)[field.name]}
                           aria-invalid={errors[field.name] ? 'true' : 'false'}
                           id={field.name}
                         />
                         <label
                           htmlFor={field.name}
                           className={`absolute left-3 top-1 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600 ${
-                            formData[field.name] ? 'top-1 text-xs text-gray-600' : ''
+                            (formData as any)[field.name] ? 'top-1 text-xs text-gray-600' : ''
                           }`}
                         >
-                          {t.fields[field.name]} {field.required && <span className="text-red-500">*</span>}
+                          {(t.fields as any)[field.name]} {field.required && <span className="text-red-500">*</span>}
                         </label>
                       </div>
                       {errors[field.name] && (
@@ -753,22 +948,22 @@ const FormPage = () => {
                         <input
                           type={field.type}
                           name={field.name}
-                          value={formData[field.name]}
+                          value={(formData as any)[field.name]}
                           onChange={handleChange}
                           className={`peer w-full p-3 pt-5 bg-white border ${
                             errors[field.name] ? 'border-red-500' : 'border-gray-300'
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent`}
-                          placeholder={t.fields[field.name]}
+                          placeholder={(t.fields as any)[field.name]}
                           aria-invalid={errors[field.name] ? 'true' : 'false'}
                           id={field.name}
                         />
                         <label
                           htmlFor={field.name}
                           className={`absolute left-3 top-1 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600 ${
-                            formData[field.name] ? 'top-1 text-xs text-gray-600' : ''
+                            (formData as any)[field.name] ? 'top-1 text-xs text-gray-600' : ''
                           }`}
                         >
-                          {t.fields[field.name]}
+                          {(t.fields as any)[field.name]}
                         </label>
                       </div>
                       {errors[field.name] && (
@@ -821,30 +1016,30 @@ const FormPage = () => {
                           name={field.name}
                           value={
                             field.name.includes('languageSkills')
-                              ? formData.languageSkills[field.name.split('.')[1]]
-                              : formData.skills[field.name.split('.')[1]]
+                              ? (formData.languageSkills as any)[field.name.split('.')[1]]
+                              : (formData.skills as any)[field.name.split('.')[1]]
                           }
                           onChange={handleChange}
                           className="peer w-full p-3 pt-5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
                           placeholder={
                             field.name.includes('languageSkills')
-                              ? t.fields.languageSkills[field.name.split('.')[1]]
-                              : t.fields.skills[field.name.split('.')[1]]
+                              ? (t.fields.languageSkills as any)[field.name.split('.')[1]]
+                              : (t.fields.skills as any)[field.name.split('.')[1]]
                           }
                           id={field.name}
                         />
                         <label
                           htmlFor={field.name}
                           className={`absolute left-3 top-1 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600 ${
-                            (field.name.includes('languageSkills') && formData.languageSkills[field.name.split('.')[1]]) ||
-                            (field.name.includes('skills') && formData.skills[field.name.split('.')[1]])
+                            (field.name.includes('languageSkills') && (formData.languageSkills as any)[field.name.split('.')[1]]) ||
+                            (field.name.includes('skills') && (formData.skills as any)[field.name.split('.')[1]])
                               ? 'top-1 text-xs text-gray-600'
                               : ''
                           }`}
                         >
                           {field.name.includes('languageSkills')
-                            ? t.fields.languageSkills[field.name.split('.')[1]]
-                            : t.fields.skills[field.name.split('.')[1]]}
+                            ? (t.fields.languageSkills as any)[field.name.split('.')[1]]
+                            : (t.fields.skills as any)[field.name.split('.')[1]]}
                         </label>
                       </div>
                       {field.tooltip && (
@@ -856,6 +1051,24 @@ const FormPage = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+
+            {/* Info Message */}
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    سيتم حفظ جميع البيانات في جدول AutomaticEmployee
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    هذا الجدول مخصص لحفظ بيانات العاملات سواء كانت مدخلة يدوياً أو مستخرجة من PDF
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}
@@ -890,6 +1103,15 @@ const FormPage = () => {
           </form>
         </div>
       </div>
+
+      {/* PDF Processor Modal */}
+      {showPDFProcessor && (
+        <PDFProcessor
+          onDataExtracted={handlePDFDataExtracted}
+          onImagesExtracted={handlePDFImagesExtracted}
+          onClose={handlePDFProcessorClose}
+        />
+      )}
 
       <style jsx>{`
         @keyframes fade-in {
