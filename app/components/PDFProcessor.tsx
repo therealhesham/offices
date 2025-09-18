@@ -305,7 +305,43 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
   const [currentStep, setCurrentStep] = useState<'upload' | 'select-images' | 'upload-images' | 'extract-data' | 'save'>('upload');
   const [currentModel, setCurrentModel] = useState('gemini-2.5-flash');
   const [isRetryingWithPro, setIsRetryingWithPro] = useState(false);
+  const [visitedSteps, setVisitedSteps] = useState<Set<string>>(new Set(['upload']));
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Step navigation functions
+  const goToNextStep = () => {
+    const steps = ['upload', 'select-images', 'upload-images', 'extract-data', 'save'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      const nextStep = steps[currentIndex + 1] as any;
+      setCurrentStep(nextStep);
+      setVisitedSteps(prev => new Set([...prev, nextStep]));
+    }
+  };
+
+  const goToPreviousStep = () => {
+    const steps = ['upload', 'select-images', 'upload-images', 'extract-data', 'save'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      const prevStep = steps[currentIndex - 1] as any;
+      setCurrentStep(prevStep);
+    }
+  };
+
+  const canGoNext = () => {
+    const steps = ['upload', 'select-images', 'upload-images', 'extract-data', 'save'];
+    const currentIndex = steps.indexOf(currentStep);
+    const nextStep = steps[currentIndex + 1];
+    
+    // Can only go to next step if we've already visited it before
+    return currentIndex < steps.length - 1 && visitedSteps.has(nextStep);
+  };
+
+  const canGoPrevious = () => {
+    const steps = ['upload', 'select-images', 'upload-images', 'extract-data', 'save'];
+    const currentIndex = steps.indexOf(currentStep);
+    return currentIndex > 0;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -364,6 +400,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
         errors: [],
       });
       setCurrentStep('select-images');
+      setVisitedSteps(prev => new Set([...prev, 'select-images']));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -379,6 +416,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
 
     setSelectedImages([selectedProfileImage, selectedFullImage]);
     setCurrentStep('upload-images');
+    setVisitedSteps(prev => new Set([...prev, 'upload-images']));
   };
 
   const uploadSelectedImages = async () => {
@@ -443,6 +481,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
 
       setUploadedImageUrls(uploadedUrls);
       setCurrentStep('extract-data');
+      setVisitedSteps(prev => new Set([...prev, 'extract-data']));
     } catch (error: any) {
       console.error('Error uploading images:', error);
       setError(t.uploadFailed.replace('{error}', error.message));
@@ -484,6 +523,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
       );
       setCurrentModel(modelName);
       setCurrentStep('save');
+      setVisitedSteps(prev => new Set([...prev, 'save']));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during data extraction');
     } finally {
@@ -614,6 +654,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
     setCurrentStep('upload');
     setCurrentModel('gemini-2.5-flash');
     setIsRetryingWithPro(false);
+    setVisitedSteps(new Set(['upload']));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -771,6 +812,31 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   </button>
                 </div>
               )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={!canGoPrevious()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  السابق
+                </button>
+                
+                <button
+                  onClick={goToNextStep}
+                  disabled={!canGoNext()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  التالي
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -897,6 +963,31 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   {t.continueToExtract}
                 </button>
               </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={!canGoPrevious()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  السابق
+                </button>
+                
+                <button
+                  onClick={goToNextStep}
+                  disabled={!canGoNext()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  التالي
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -976,6 +1067,31 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   )}
                 </button>
               </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={!canGoPrevious()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  السابق
+                </button>
+                
+                <button
+                  onClick={goToNextStep}
+                  disabled={!canGoNext()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  التالي
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -1053,6 +1169,31 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   ) : (
                     t.extractDataWithGemini
                   )}
+                </button>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={!canGoPrevious()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  السابق
+                </button>
+                
+                <button
+                  onClick={goToNextStep}
+                  disabled={!canGoNext()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  التالي
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -1268,6 +1409,31 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
                 >
                   {t.restart}
+                </button>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={!canGoPrevious()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  السابق
+                </button>
+                
+                <button
+                  onClick={goToNextStep}
+                  disabled={!canGoNext()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  التالي
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
 

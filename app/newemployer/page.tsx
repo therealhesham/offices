@@ -875,6 +875,7 @@ const FormPage = () => {
                   onClick={() => {
                     setActiveTab('automatic');
                     setInputMethod('automatic');
+                    setShowPDFProcessor(true);
                   }}
                   className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
                     activeTab === 'automatic'
