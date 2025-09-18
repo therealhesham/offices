@@ -16,6 +16,8 @@ const translations = {
     successMessage: 'Profile created successfully!',
     submitButton: 'Create Profile',
     processing: 'Processing...',
+    uploadPDFButton: 'Upload CV Automatically',
+    uploadPDFButtonTooltip: 'Upload PDF file and extract data automatically using AI',
     imagesSection: 'Upload Images',
     fullBodyImage: 'Full Body Image',
     personalImage: 'Personal Image',
@@ -120,6 +122,8 @@ const translations = {
     successMessage: 'Profil créé avec succès !',
     submitButton: 'Créer le profil',
     processing: 'Traitement en cours...',
+    uploadPDFButton: 'Télécharger CV Automatiquement',
+    uploadPDFButtonTooltip: 'Télécharger un fichier PDF et extraire les données automatiquement avec l\'IA',
     imagesSection: 'Télécharger des images',
     fullBodyImage: 'Image du corps entier',
     personalImage: 'Image personnelle',
@@ -192,6 +196,95 @@ const translations = {
       imageSizeExceeded: 'La taille de l’image dépasse 32 Mo.',
     },
   },
+  ar: {
+    title: 'إضافة عاملة جديدة',
+    completionPercentage: 'نسبة الإكمال',
+    completed: 'مكتمل',
+    successMessage: 'تم إنشاء الملف الشخصي بنجاح!',
+    submitButton: 'إضافة عاملة',
+    processing: 'جاري المعالجة...',
+    uploadPDFButton: 'رفع سيرة ذاتية تلقائياً',
+    uploadPDFButtonTooltip: 'رفع ملف PDF واستخراج البيانات تلقائياً باستخدام الذكاء الاصطناعي',
+    imagesSection: 'رفع الصور',
+    fullBodyImage: 'صورة الجسم كاملاً',
+    personalImage: 'الصورة الشخصية',
+    dragDrop: 'اسحب وأفلت أو انقر للرفع',
+    fileTypes: 'JPEG/PNG، حد أقصى 32 ميجابايت',
+    chooseImage: 'اختر صورة',
+    uploadClearImage: 'ارفع صورة واضحة',
+    personalInfoSection: 'المعلومات الشخصية',
+    passportFinancialSection: 'معلومات الجواز والمالية',
+    skillsLanguagesSection: 'المهارات واللغات',
+    fields: {
+      Name: 'الاسم الكامل',
+      nationality: 'الجنسية',
+      Religion: 'الدين',
+      phone: 'رقم الهاتف',
+      email: 'البريد الإلكتروني',
+      dateOfbirth: 'تاريخ الميلاد',
+      maritalStatus: 'الحالة الاجتماعية',
+      education: 'التعليم',
+      PassportStart: 'تاريخ بداية الجواز',
+      PassportEnd: 'تاريخ انتهاء الجواز',
+      salary: 'الراتب',
+      experienceYears: 'سنوات الخبرة',
+      age: 'العمر',
+      birthPlace: 'مكان الميلاد',
+      passportNumber: 'رقم الجواز',
+      jobTitle: 'المسمى الوظيفي',
+      livingTown: 'المدينة',
+      childrenCount: 'عدد الأطفال',
+      weight: 'الوزن',
+      height: 'الطول',
+      'languageSkills.arabic': 'العربية',
+      'languageSkills.english': 'الإنجليزية',
+      'skills.laundry': 'الغسيل',
+      'skills.ironing': 'الكي',
+      'skills.cleaning': 'التنظيف',
+      'skills.cooking': 'الطبخ',
+      'skills.sewing': 'الخياطة',
+      'skills.babySitting': 'رعاية الأطفال'
+    },
+    tooltips: {
+      Name: 'أدخل الاسم الكامل للعاملة',
+      nationality: 'اختر الجنسية',
+      Religion: 'اختر الدين',
+      phone: 'أدخل رقم الهاتف',
+      email: 'أدخل البريد الإلكتروني',
+      dateOfbirth: 'اختر تاريخ الميلاد',
+      maritalStatus: 'اختر الحالة الاجتماعية',
+      education: 'أدخل مستوى التعليم',
+      PassportStart: 'اختر تاريخ بداية الجواز',
+      PassportEnd: 'اختر تاريخ انتهاء الجواز',
+      salary: 'أدخل الراتب المطلوب',
+      experienceYears: 'أدخل سنوات الخبرة',
+      age: 'أدخل العمر',
+      birthPlace: 'أدخل مكان الميلاد',
+      passportNumber: 'أدخل رقم الجواز',
+      jobTitle: 'أدخل المسمى الوظيفي',
+      livingTown: 'أدخل المدينة',
+      childrenCount: 'أدخل عدد الأطفال',
+      weight: 'أدخل الوزن',
+      height: 'أدخل الطول',
+      'languageSkills.arabic': 'مستوى اللغة العربية',
+      'languageSkills.english': 'مستوى اللغة الإنجليزية',
+      'skills.laundry': 'مستوى مهارة الغسيل',
+      'skills.ironing': 'مستوى مهارة الكي',
+      'skills.cleaning': 'مستوى مهارة التنظيف',
+      'skills.cooking': 'مستوى مهارة الطبخ',
+      'skills.sewing': 'مستوى مهارة الخياطة',
+      'skills.babySitting': 'مستوى مهارة رعاية الأطفال'
+    },
+    errors: {
+      required: 'هذا الحقل مطلوب',
+      invalidEmail: 'البريد الإلكتروني غير صحيح',
+      invalidPhone: 'رقم الهاتف غير صحيح',
+      ageUnder18: 'العمر يجب أن يكون 18 سنة أو أكثر',
+      invalidPassportDates: 'تاريخ انتهاء الجواز يجب أن يكون بعد تاريخ البداية',
+      invalidSalary: 'الراتب يجب أن يكون رقم صحيح',
+      invalidExperience: 'سنوات الخبرة يجب أن تكون رقم صحيح'
+    }
+  },
   ur: {
     title: 'نئی ورکر شامل کریں',
     completionPercentage: 'مکمل ہونے کا فیصد',
@@ -199,6 +292,8 @@ const translations = {
     successMessage: 'پروفائل کامیابی سے بنایا گیا!',
     submitButton: 'پروفائل بنائیں',
     processing: 'پروسیسنگ جاری ہے...',
+    uploadPDFButton: 'CV خودکار اپ لوڈ کریں',
+    uploadPDFButtonTooltip: 'PDF فائل اپ لوڈ کریں اور AI کا استعمال کرتے ہوئے ڈیٹا خودکار نکالیں',
     imagesSection: 'تصاویر اپ لوڈ کریں',
     fullBodyImage: 'مکمل جسم کی تصویر',
     personalImage: 'ذاتی تصویر',
@@ -319,7 +414,7 @@ const FormPage = () => {
   const [width, setWidth] = useState(0);
   const [showPDFProcessor, setShowPDFProcessor] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [inputMethod, setInputMethod] = useState<'automatic' | 'manual' | null>(null);
+  const [inputMethod, setInputMethod] = useState<'automatic' | 'manual' | null>('manual');
 
   const { language } = useLanguage();
   // Fallback to English if language is invalid
@@ -688,78 +783,16 @@ const FormPage = () => {
     <div className={`min-h-screen bg-gradient-to-br from-[#F5F5F0] to-[#E5E5E5] text-gray-800 ${width > 640 ? 'flex flex-row' : 'flex flex-col'}`}>
       <Sidebar />
       <div className="flex-1 p-4 sm:p-8 md:p-12 overflow-auto">
-        {/* Method Selection Modal */}
-        {!inputMethod && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 max-w-4xl w-full animate-modal-in">
-              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-white">
-                <h2 className="text-3xl font-bold text-center mb-2">اختر طريقة إضافة العاملة</h2>
-                <p className="text-center text-purple-100">اختر الطريقة المناسبة لإضافة بيانات العاملة</p>
-              </div>
-              
-              <div className="p-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Automatic Method */}
-                  <div 
-                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                    onClick={() => {
-                      setInputMethod('automatic');
-                      setShowPDFProcessor(true);
-                    }}
-                  >
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border-2 border-transparent group-hover:border-blue-300 transition-all duration-300">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">الطريقة التلقائية</h3>
-                        <p className="text-gray-600 mb-4">رفع ملف PDF واستخراج البيانات تلقائياً باستخدام الذكاء الاصطناعي</p>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">ذكاء اصطناعي</span>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">سريع</span>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">دقيق</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Manual Method */}
-                  <div 
-                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                    onClick={() => setInputMethod('manual')}
-                  >
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 border-2 border-transparent group-hover:border-green-300 transition-all duration-300">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">الطريقة اليدوية</h3>
-                        <p className="text-gray-600 mb-4">إدخال البيانات يدوياً مع التحكم الكامل في جميع الحقول</p>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">تحكم كامل</span>
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">مرونة</span>
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">دقيق</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Form Content - Show for both manual and automatic (after PDF processing) */}
-        {inputMethod && (
-          <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-lg p-6 sm:p-10 md:p-12">
+        {/* Form Content - Always show */}
+        <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-lg p-6 sm:p-10 md:p-12">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-800 tracking-tight">
-                {t.title}
-              </h1>
+              <div className="flex-1">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-800 tracking-tight">
+                  {t.title}
+                </h1>
+              </div>
+
               <div className="w-full sm:w-64">
                 <p className="text-sm text-gray-600 mb-2">{t.completionPercentage}</p>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -771,49 +804,56 @@ const FormPage = () => {
                 <p className="text-xs text-gray-600 mt-1">{formProgress}% {t.completed}</p>
               </div>
             </div>
+            <div className="mt-4  flex justify-end">
+                    <button
+                      onClick={() => {
+                        setInputMethod('automatic');
+                        setShowPDFProcessor(true);
+                      }}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                      title={t.uploadPDFButtonTooltip}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>{t.uploadPDFButton}</span>
+                      </div>
+                    </button>
+                </div>
 
-            {/* Method Indicator */}
-            <div className={`mb-8 p-4 rounded-2xl border ${inputMethod === 'automatic' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${inputMethod === 'automatic' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                    {inputMethod === 'automatic' ? (
+            {/* Method Indicator - Only show when using automatic method */}
+            {inputMethod === 'automatic' && (
+              <div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100">
                       <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                    ) : (
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    )}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">الطريقة التلقائية</h3>
+                      <p className="text-sm text-gray-600">مراجعة البيانات المستخرجة من PDF</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {inputMethod === 'automatic' ? 'الطريقة التلقائية' : 'الطريقة اليدوية'}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {inputMethod === 'automatic' ? 'مراجعة البيانات المستخرجة من PDF' : 'إدخال البيانات يدوياً'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  {inputMethod === 'automatic' && (
+                  <div className="flex space-x-2">
                     <button
                       onClick={() => setShowPDFProcessor(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300"
                     >
                       📄 رفع PDF جديد
                     </button>
-                  )}
-                  <button
-                    onClick={() => setInputMethod(null)}
-                    className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg transition-all duration-300 border border-gray-300"
-                  >
-                    تغيير الطريقة
-                  </button>
+                    <button
+                      onClick={() => setInputMethod('manual')}
+                      className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg transition-all duration-300 border border-gray-300"
+                    >
+                      العودة للطريقة اليدوية
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {response && (
             <div className="mb-8 p-4 bg-green-100 border border-green-400 rounded-lg animate-fade-in">
@@ -1209,7 +1249,6 @@ const FormPage = () => {
             </div>
           </form>
         </div>
-        )}
       </div>
 
       {/* PDF Processor Modal */}
