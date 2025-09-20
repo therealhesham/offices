@@ -452,11 +452,11 @@ const FormPage = () => {
     personal: true,
     passport: true,
     skills: true,
+    pdfProcessor: true,
   });
   const fullBodyInputRef = useRef<any>(null);
   const personalInputRef = useRef<any>(null);
   const [width, setWidth] = useState(0);
-  const [showPDFProcessor, setShowPDFProcessor] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [inputMethod, setInputMethod] = useState<'automatic' | 'manual' | null>('manual');
   const [activeTab, setActiveTab] = useState<'manual' | 'automatic'>('manual');
@@ -754,7 +754,7 @@ const FormPage = () => {
     }));
     
     // Close PDF processor and show the form for review
-    setShowPDFProcessor(false);
+    setExpandedSections((prev: any) => ({ ...prev, pdfProcessor: false }));
     // Switch to manual tab to show the form for review
     setActiveTab('manual');
   };
@@ -774,10 +774,6 @@ const FormPage = () => {
     }
   };
 
-  // Handle PDF Processor Close
-  const handlePDFProcessorClose = () => {
-    setShowPDFProcessor(false);
-  };
 
   // دالة التحقق من صحة البيانات المستخرجة
   const validateExtractedData = (data: any): string[] => {
@@ -875,7 +871,6 @@ const FormPage = () => {
                   onClick={() => {
                     setActiveTab('automatic');
                     setInputMethod('automatic');
-                    setShowPDFProcessor(true);
                   }}
                   className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
                     activeTab === 'automatic'
@@ -910,7 +905,7 @@ const FormPage = () => {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setShowPDFProcessor(true)}
+                      onClick={() => setExpandedSections((prev: any) => ({ ...prev, pdfProcessor: true }))}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300"
                     >
                       📄 {t.uploadNewPDF}
@@ -1325,69 +1320,21 @@ const FormPage = () => {
 
           {/* Show automatic method content when automatic tab is active */}
           {activeTab === 'automatic' && (
-            <div className="text-center py-12">
-              <div className="max-w-md mx-auto">
-                <div className="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+            
+             
+                <div className="animate-slide-in">
+                  <PDFProcessor
+                    onDataExtracted={handlePDFDataExtracted}
+                    onImagesExtracted={handlePDFImagesExtracted}
+                    onClose={() => setExpandedSections((prev: any) => ({ ...prev, pdfProcessor: false }))}
+                    language={language}
+                  />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-4">{t.automaticMethod}</h3>
-                <p className="text-gray-600 mb-8">{t.uploadPDFButtonTooltip}</p>
-                <button
-                  onClick={() => setShowPDFProcessor(true)}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-lg font-medium"
-                >
-                  <div className="flex items-center space-x-3">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span>{t.uploadPDFButton}</span>
-                  </div>
-                </button>
-              </div>
-            </div>
+              
           )}
         </div>
       </div>
 
-      {/* PDF Processor Modal */}
-      {showPDFProcessor && (
-        <div className="fixed inset-0 z-50 bg-black/50">
-          {/* Method Indicator for Automatic */}
-          {/* <div className="absolute top-4 left-4 z-10">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-blue-200 shadow-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800">{t.automaticMethod}</h3>
-                  <p className="text-xs text-gray-600">{t.reviewExtractedData}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowPDFProcessor(false);
-                    setInputMethod(null);
-                  }}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg transition-all duration-300 text-sm"
-                >
-                  {t.changeMethod}
-                </button>
-              </div>
-            </div>
-          </div> */}
-          
-          <PDFProcessor
-            onDataExtracted={handlePDFDataExtracted}
-            onImagesExtracted={handlePDFImagesExtracted}
-            onClose={handlePDFProcessorClose}
-            language={language}
-          />
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes fade-in {

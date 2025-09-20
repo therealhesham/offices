@@ -661,20 +661,14 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
   };
 
   return (
-    <div className="fixed inset-0  flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-8 sm:p-10">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-extrabold text-gray-900 text-right">
-              {t.title}
-            </h1>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
-            >
-              ×
-            </button>
-          </div>
+    <div className="bg-white rounded-2xl shadow-lg max-w-full w-full">
+      <div className="px-6 py-8 sm:p-10">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 text-right">
+            {t.title}
+          </h1>
+   
+        </div>
 
           {/* Progress Steps */}
           <div className="mb-10">
@@ -779,7 +773,7 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
                   <button
                     onClick={handleFileUpload}
                     disabled={isProcessing}
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                    className="inline-flex items-center px-6 py-3 cursor-pointer   border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                   >
                     {isProcessing ? (
                       <>
@@ -1444,7 +1438,6 @@ export default function PDFProcessor({ onDataExtracted, onImagesExtracted, onClo
               )}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
