@@ -854,7 +854,7 @@ const FormPage = () => {
                     setActiveTab('manual');
                     setInputMethod('manual');
                   }}
-                  className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
+                  className={`flex-1 py-3 px-6 rounded-lg cursor-pointer font-medium transition-all duration-300 ${
                     activeTab === 'manual'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'text-gray-600 hover:text-gray-800'
@@ -872,7 +872,7 @@ const FormPage = () => {
                     setActiveTab('automatic');
                     setInputMethod('automatic');
                   }}
-                  className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
+                  className={`flex-1 py-3 px-6 rounded-lg cursor-pointer font-medium transition-all duration-300 ${
                     activeTab === 'automatic'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'text-gray-600 hover:text-gray-800'
