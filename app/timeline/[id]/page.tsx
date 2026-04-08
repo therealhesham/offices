@@ -1,281 +1,461 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
-import { FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaInfoCircle, FaUpload } from 'react-icons/fa';
+import {
+  FaCheckCircle,
+  FaHourglassHalf,
+  FaTimesCircle,
+  FaInfoCircle,
+  FaUpload,
+} from 'react-icons/fa';
 import AWS from 'aws-sdk';
-import { NewOrder, ArrivalList } from '@/app/lib/types';
 import Sidebar from '@/app/components/Sidebar';
 import { useLanguage } from '@/app/contexts/LanguageContext';
-const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');
 
-const s3 = new AWS.S3({
-  accessKeyId: "DO801JJ6VK8NVWKDVZ8M",
-  secretAccessKey: "XYYRqI632DCboid1FyE+DJrQa9fZuXKjcoGEGkZlWnY",
-  endpoint: 'https://recruitmentrawaes.sgp1.digitaloceanspaces.com',
-  s3ForcePathStyle: true,
-  signatureVersion: 'v4',
-});
+// ——— نفس ترتيب ومنطق pages/admin/track_order/[id].tsx ———
+export const TRACK_ORDER_STEPS = [
+  'officeLinkInfo',
+  'officeLinkApproval',
+  'externalOfficeInfo',
+  'externalOfficeApproval',
+  'medicalCheck',
+  'foreignLaborApproval',
+  'agencyPayment',
+  'saudiEmbassyApproval',
+  'visaIssuance',
+  'travelPermit',
+  'destinations',
+  'receipt',
+] as const;
 
-// Define translations for stages and UI text
-const translations = {
+export type TrackOrderStep = (typeof TRACK_ORDER_STEPS)[number];
+
+/** حقول مطابقة لـ prisma arrivallist المستخدمة في track_order API */
+export interface ArrivalTimeline {
+  InternalmusanedContract?: string | null;
+  DateOfApplication?: string | Date | null;
+  externalmusanedContract?: string | null;
+  ExternalDateLinking?: string | Date | null;
+  externalOfficeStatus?: string | null;
+  ExternalOFficeApproval?: string | Date | null;
+  externalOfficeFile?: string | null;
+  medicalCheckDate?: string | Date | null;
+  medicalCheckFile?: string | null;
+  foreignLaborApproval?: boolean | null;
+  foreignLaborApprovalDate?: string | Date | null;
+  approvalPayment?: string | null;
+  EmbassySealing?: string | Date | null;
+  visaIssuanceDate?: string | Date | null;
+  VisaFile?: string | null;
+  travelPermit?: string | null;
+  deparatureCityCountry?: string | null;
+  arrivalSaudiAirport?: string | null;
+  deparatureCityCountryDate?: string | Date | null;
+  deparatureCityCountryTime?: string | null;
+  KingdomentryDate?: string | Date | null;
+  KingdomentryTime?: string | null;
+  DeliveryDate?: string | Date | null;
+  receiptMethod?: string | null;
+  ticketFile?: string | null;
+  visaNumber?: string | null;
+  receivingFile?: string | null;
+}
+
+export interface OrderForTimeline {
+  ClientName?: string;
+  bookingstatus?: string;
+  visa?: { visaNumber?: string | null } | null;
+  HomeMaid?: { officeName?: string | null } | null;
+}
+
+function depDateTime(a: ArrivalTimeline | null): string {
+  if (!a?.deparatureCityCountryDate) return 'N/A';
+  const d = a.deparatureCityCountryDate;
+  const date =
+    typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
+  return `${date} ${a.deparatureCityCountryTime || ''}`.trim();
+}
+
+function arrDateTime(a: ArrivalTimeline | null): string {
+  if (!a?.KingdomentryDate) return 'N/A';
+  const d = a.KingdomentryDate;
+  const date =
+    typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
+  return `${date} ${a.KingdomentryTime || ''}`.trim();
+}
+
+/** أي قيمة تُعرض كمعلومة فعلية (ليس فراغاً ولا N/A) */
+function hasPresent(v: unknown): boolean {
+  if (v === true) return true;
+  if (v === false || v == null) return false;
+  if (typeof v === 'boolean') return false;
+  if (v instanceof Date) return !Number.isNaN(v.getTime());
+  const s = String(v).trim();
+  if (s === '' || s === 'N/A') return false;
+  return true;
+}
+
+/** المرحلة مكتملة إذا وُجدت أي معلومة واحدة ضمن حقول هذه المرحلة */
+function isStepCompleted(
+  step: TrackOrderStep,
+  ctx: {
+    arrival: ArrivalTimeline | null;
+    visaNumber?: string | null;
+    homemaidOfficeName?: string | null;
+  }
+): boolean {
+  const a = ctx.arrival;
+  const visa = ctx.visaNumber ?? a?.visaNumber ?? null;
+
+  switch (step) {
+    case 'officeLinkInfo':
+      return [visa, a?.InternalmusanedContract, a?.DateOfApplication].some(hasPresent);
+    case 'officeLinkApproval':
+      return hasPresent(a?.ExternalDateLinking);
+    case 'externalOfficeInfo':
+      return [ctx.homemaidOfficeName, a?.externalmusanedContract].some(hasPresent);
+    case 'externalOfficeApproval':
+      return [a?.externalOfficeStatus, a?.ExternalOFficeApproval, a?.externalOfficeFile].some(hasPresent);
+    case 'medicalCheck':
+      return [a?.medicalCheckDate, a?.medicalCheckFile].some(hasPresent);
+    case 'foreignLaborApproval':
+      return a?.foreignLaborApproval === true || hasPresent(a?.foreignLaborApprovalDate);
+    case 'agencyPayment':
+      return hasPresent(a?.approvalPayment);
+    case 'saudiEmbassyApproval':
+      return hasPresent(a?.EmbassySealing);
+    case 'visaIssuance':
+      return [a?.visaIssuanceDate, a?.VisaFile].some(hasPresent);
+    case 'travelPermit':
+      return hasPresent(a?.travelPermit);
+    case 'destinations':
+      return (
+        (depDateTime(a) !== 'N/A' && depDateTime(a) !== '') ||
+        (arrDateTime(a) !== 'N/A' && arrDateTime(a) !== '') ||
+        [a?.deparatureCityCountry, a?.arrivalSaudiAirport, a?.ticketFile].some(hasPresent)
+      );
+    case 'receipt':
+      return [a?.DeliveryDate, a?.receiptMethod, a?.receivingFile].some(hasPresent);
+    default:
+      return false;
+  }
+}
+
+function getFirstIncompleteIndex(ctx: {
+  arrival: ArrivalTimeline | null;
+  visaNumber?: string | null;
+  homemaidOfficeName?: string | null;
+}): number {
+  for (let i = 0; i < TRACK_ORDER_STEPS.length; i++) {
+    if (!isStepCompleted(TRACK_ORDER_STEPS[i], ctx)) return i;
+  }
+  return TRACK_ORDER_STEPS.length;
+}
+
+function isArrivalDatePassed(a: ArrivalTimeline | null): boolean {
+  if (!a?.KingdomentryDate) return false;
+  const dt = new Date(a.KingdomentryDate as Date);
+  const t = a.KingdomentryTime?.trim();
+  if (t) {
+    const parts = t.split(':').map((x) => parseInt(x, 10));
+    if (!Number.isNaN(parts[0])) dt.setHours(parts[0], parts[1] || 0, 0, 0);
+  }
+  return Date.now() >= dt.getTime();
+}
+
+function canCompleteStep(
+  step: TrackOrderStep,
+  ctx: {
+    arrival: ArrivalTimeline | null;
+    visaNumber?: string | null;
+    homemaidOfficeName?: string | null;
+  }
+): boolean {
+  const idx = TRACK_ORDER_STEPS.indexOf(step);
+  if (idx <= 0) return true;
+  for (let i = 0; i < idx; i++) {
+    if (!isStepCompleted(TRACK_ORDER_STEPS[i], ctx)) return false;
+  }
+  if (step === 'receipt' && !isArrivalDatePassed(ctx.arrival)) return false;
+  return true;
+}
+
+// ——— عناوين المراحل ———
+const STEP_LABELS: Record<
+  'en' | 'fra' | 'ur' | 'ar',
+  Record<TrackOrderStep, string>
+> = {
   en: {
-    stages: [
-      'Link with Musaned',
-      'Link with External Musaned',
-      'Link with External Office',
-      'Medical Check',
-      'Link with Agency',
-      'Embassy Sealing',
-      'Ticket Booking',
-      'Receiving',
-    ],
-    title: 'Order Timeline: {name}',
-    subtitle: 'Track the progress of your order in real-time',
-    progress: 'Progress: {percentage}%',
-    completed: 'Completed',
-    inProgress: 'In Progress',
-    pending: 'Pending',
-    uploadLabel: 'Upload Medical Check File',
-    uploadButton: 'Upload File',
-    uploading: 'Uploading...',
-    uploadSuccess: 'File uploaded successfully! ',
-    uploadError: 'Error uploading file. Please try again.',
-    viewFile: 'View File',
-    medicalFileUploaded: 'Medical file already uploaded. ',
-    medicalFileRestricted: 'Medical file upload is only allowed during current stage.',
-    orderNotFound: 'Order not found',
-    stageDetails: {
-      'Link with Musaned': {
-        'Internal Musaned Contract': 'Internal Musaned Contract',
-        'Date of Application': 'Date of Application',
-      },
-      'Link with External Musaned': {
-        'External Musaned Contract': 'External Musaned Contract',
-        'External Date Linking': 'External Date Linking',
-      },
-      'Link with External Office': {
-        'External Office Approval': 'External Office Approval',
-        'External Office File': 'External Office File',
-      },
-      'Medical Check': {
-        'Medical Check File': 'Medical Check File',
-      },
-      'Link with Agency': {
-        'Agency Date': 'Agency Date',
-      },
-      'Embassy Sealing': {
-        'Embassy Sealing': 'Embassy Sealing',
-      },
-      'Ticket Booking': {
-        'Ticket File': 'Ticket File',
-        'Booking Date': 'Booking Date',
-      },
-      'Receiving': {
-        'Receiving File': 'Receiving File',
-        'Delivery Date': 'Delivery Date',
-      },
-    },
+    officeLinkInfo: 'Link with office administration (Musaned)',
+    officeLinkApproval: 'Office link approval',
+    externalOfficeInfo: 'External office',
+    externalOfficeApproval: 'External office approval',
+    medicalCheck: 'Medical check',
+    foreignLaborApproval: 'Foreign labor approval',
+    agencyPayment: 'Agency payment',
+    saudiEmbassyApproval: 'Saudi embassy approval',
+    visaIssuance: 'Visa issuance',
+    travelPermit: 'Travel permit',
+    destinations: 'Destinations / ticket',
+    receipt: 'Worker handover completed',
   },
   fra: {
-    stages: [
-      'Lien avec Musaned',
-      'Lien avec Musaned externe',
-      'Lien avec le bureau externe',
-      'Examen médical',
-      'Lien avec l’agence',
-      'Scellage à l’ambassade',
-      'Réservation de billet',
-      'Réception',
-    ],
-    title: 'Chronologie de la commande : {name}',
-    subtitle: 'Suivez la progression de votre commande en temps réel',
-    progress: 'Progression : {percentage}%',
-    completed: 'Terminé',
-    inProgress: 'En cours',
-    pending: 'En attente',
-    uploadLabel: 'Télécharger le fichier d’examen médical',
-    uploadButton: 'Télécharger le fichier',
-    uploading: 'Téléchargement en cours...',
-    uploadSuccess: 'Fichier téléchargé avec succès ! ',
-    uploadError: 'Erreur lors du téléchargement du fichier. Veuillez réessayer.',
-    viewFile: 'Voir le fichier',
-    medicalFileUploaded: 'Fichier médical déjà téléchargé. ',
-    medicalFileRestricted: 'Le téléchargement du fichier médical n’est autorisé que pendant l’étape en cours.',
-    orderNotFound: 'Commande non trouvée',
-    stageDetails: {
-      'Lien avec Musaned': {
-        'Internal Musaned Contract': 'Contrat Musaned interne',
-        'Date of Application': 'Date de candidature',
-      },
-      'Lien avec Musaned externe': {
-        'External Musaned Contract': 'Contrat Musaned externe',
-        'External Date Linking': 'Date de liaison externe',
-      },
-      'Lien avec le bureau externe': {
-        'External Office Approval': 'Approbation du bureau externe',
-        'External Office File': 'Fichier du bureau externe',
-      },
-      'Examen médical': {
-        'Medical Check File': 'Fichier d’examen médical',
-      },
-      'Lien avec l’agence': {
-        'Agency Date': 'Date de l’agence',
-      },
-      'Scellage à l’ambassade': {
-        'Embassy Sealing': 'Scellage à l’ambassade',
-      },
-      'Réservation de billet': {
-        'Ticket File': 'Fichier de billet',
-        'Booking Date': 'Date de réservation',
-      },
-      'Réception': {
-        'Receiving File': 'Fichier de réception',
-        'Delivery Date': 'Date de livraison',
-      },
-    },
+    officeLinkInfo: 'Liaison avec l’administration (Musaned)',
+    officeLinkApproval: 'Approbation du lien bureau',
+    externalOfficeInfo: 'Bureau externe',
+    externalOfficeApproval: 'Approbation du bureau externe',
+    medicalCheck: 'Examen médical',
+    foreignLaborApproval: 'Approbation main-d’œuvre étrangère',
+    agencyPayment: 'Paiement agence',
+    saudiEmbassyApproval: 'Approbation ambassade saoudienne',
+    visaIssuance: 'Délivrance du visa',
+    travelPermit: 'Permis de voyage',
+    destinations: 'Destinations / billet',
+    receipt: 'Remise de la travailleuse effectuée',
   },
   ur: {
-    stages: [
-      'مساند کے ساتھ ربط',
-      'خارجی مساند کے ساتھ ربط',
-      'خارجی دفتر کے ساتھ ربط',
-      'طبی معائنہ',
-      'ایجنسی کے ساتھ ربط',
-      'سفارتخانے میں مہر لگانا',
-      'ٹکٹ کی بکنگ',
-      'وصول کرنا',
-    ],
-    title: 'آرڈر ٹائم لائن: {name}',
-    subtitle: 'اپنے آرڈر کی پیشرفت کو حقیقی وقت میں ٹریک کریں',
-    progress: 'پیشرفت: {percentage}%',
-    completed: 'مکمل',
-    inProgress: 'جاری',
-    pending: 'زیر التواء',
-    uploadLabel: 'طبی معائنہ فائل اپ لوڈ کریں',
-    uploadButton: 'فائل اپ لوڈ کریں',
-    uploading: 'اپ لوڈ ہو رہا ہے...',
-    uploadSuccess: 'فائل کامیابی سے اپ لوڈ ہو گئی! ',
-    uploadError: 'فائل اپ لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔',
-    viewFile: 'فائل دیکھیں',
-    medicalFileUploaded: 'طبی فائل پہلے ہی اپ لوڈ کی جا چکی ہے۔ ',
-    medicalFileRestricted: 'طبی فائل اپ لوڈ صرف موجودہ مرحلے کے دوران کی جا سکتی ہے۔',
-    orderNotFound: 'آرڈر نہیں ملا',
-    stageDetails: {
-      'مساند کے ساتھ ربط': {
-        'Internal Musaned Contract': 'اندرونی مساند معاہدہ',
-        'Date of Application': 'درخواست کی تاریخ',
-      },
-      'خارجی مساند کے ساتھ ربط': {
-        'External Musaned Contract': 'خارجی مساند معاہدہ',
-        'External Date Linking': 'خارجی ربط کی تاریخ',
-      },
-      'خارجی دفتر کے ساتھ ربط': {
-        'External Office Approval': 'خارجی دفتر کی منظوری',
-        'External Office File': 'خارجی دفتر کی فائل',
-      },
-      'طبی معائنہ': {
-        'Medical Check File': 'طبی معائنہ فائل',
-      },
-      'ایجنسی کے ساتھ ربط': {
-        'Agency Date': 'ایجنسی کی تاریخ',
-      },
-      'سفارتخانے میں مہر لگانا': {
-        'Embassy Sealing': 'سفارتخانے میں مہر',
-      },
-      'ٹکٹ کی بکنگ': {
-        'Ticket File': 'ٹکٹ کی فائل',
-        'Booking Date': 'بکنگ کی تاریخ',
-      },
-      'وصول کرنا': {
-        'Receiving File': 'وصول کی فائل',
-        'Delivery Date': 'ترسیل کی تاریخ',
-      },
-    },
+    officeLinkInfo: 'دفتر انتظامیہ سے ربط (مساند)',
+    officeLinkApproval: 'دفتر لنک کی منظوری',
+    externalOfficeInfo: 'بیرونی دفتر',
+    externalOfficeApproval: 'بیرونی دفتر کی منظوری',
+    medicalCheck: 'طبی معائنہ',
+    foreignLaborApproval: 'غیر ملکی لیبر کی منظوری',
+    agencyPayment: 'ایجنسی کی ادائیگی',
+    saudiEmbassyApproval: 'سعودی سفارت کی منظوری',
+    visaIssuance: 'ویزا جاری کرنا',
+    travelPermit: 'سفر کی اجازت',
+    destinations: 'منزلیں / ٹکٹ',
+    receipt: 'ملازمہ کی حوالگی مکمل',
   },
   ar: {
-    stages: [
-      'الربط مع مساند',
-      'الربط مع مساند الخارجي',
-      'الربط مع المكتب الخارجي',
-      'الفحص الطبي',
-      'الربط مع الوكالة',
-      'ختم السفارة',
-      'حجز التذكرة',
-      'الاستلام',
-    ],
-    title: 'الجدول الزمني للطلب',
-    subtitle: 'تتبع تقدم طلبك في الوقت الفعلي',
+    officeLinkInfo: 'الربط مع إدارة المكاتب',
+    officeLinkApproval: 'اعتماد الربط',
+    externalOfficeInfo: 'المكتب الخارجي',
+    externalOfficeApproval: 'موافقة المكتب الخارجي',
+    medicalCheck: 'الفحص الطبي',
+    foreignLaborApproval: 'موافقة وزارة العمل الأجنبية',
+    agencyPayment: 'دفع الوكالة',
+    saudiEmbassyApproval: 'موافقة السفارة السعودية',
+    visaIssuance: 'إصدار التأشيرة',
+    travelPermit: 'تصريح السفر',
+    destinations: 'الوجهات / التذكرة',
+    receipt: 'اكتمال تسليم العاملة',
+  },
+};
+
+function getStageDetails(
+  stage: TrackOrderStep,
+  arrival: ArrivalTimeline | null,
+  viewFileLabel: string
+): Record<string, React.ReactNode> | null {
+  if (!arrival) return null;
+
+  const link = (url?: string | null) =>
+    url ? (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="underline text-indigo-600">
+        {viewFileLabel}
+      </a>
+    ) : (
+      'N/A'
+    );
+
+  switch (stage) {
+    case 'officeLinkInfo':
+      return {
+        'Visa / رقم التأشيرة': arrival.visaNumber || 'N/A',
+        'Internal Musaned Contract': arrival.InternalmusanedContract || 'N/A',
+        'Date of Application': arrival.DateOfApplication?.toString() || 'N/A',
+      };
+    case 'officeLinkApproval':
+      return {
+        'External Date Linking': arrival.ExternalDateLinking?.toString() || 'N/A',
+      };
+    case 'externalOfficeInfo':
+      return {
+        'External Musaned Contract': arrival.externalmusanedContract || 'N/A',
+      };
+    case 'externalOfficeApproval':
+      return {
+        Status: arrival.externalOfficeStatus || 'N/A',
+        'External Office Approval': arrival.ExternalOFficeApproval?.toString() || 'N/A',
+        'External Office File': link(arrival.externalOfficeFile),
+      };
+    case 'medicalCheck':
+      return {
+        'Medical Check Date': arrival.medicalCheckDate?.toString() || 'N/A',
+        'Medical Check File': link(arrival.medicalCheckFile),
+      };
+    case 'foreignLaborApproval':
+      return {
+        'foreignLaborApprovalDate': arrival.foreignLaborApprovalDate?.toString() || 'N/A',
+      };
+    case 'agencyPayment':
+      return {
+        approvalPayment: arrival.approvalPayment || 'N/A',
+      };
+    case 'saudiEmbassyApproval':
+      return {
+        EmbassySealing: arrival.EmbassySealing?.toString() || 'N/A',
+      };
+    case 'visaIssuance':
+      return {
+        visaIssuanceDate: arrival.visaIssuanceDate?.toString() || 'N/A',
+        VisaFile: link(arrival.VisaFile),
+      };
+    case 'travelPermit':
+      return {
+        travelPermit: arrival.travelPermit || 'N/A',
+      };
+    case 'destinations':
+      return {
+        'Departure': depDateTime(arrival),
+        'Arrival': arrDateTime(arrival),
+        'Departure city': arrival.deparatureCityCountry || 'N/A',
+        'Arrival airport': arrival.arrivalSaudiAirport || 'N/A',
+        'Ticket file': link(arrival.ticketFile),
+      };
+    case 'receipt':
+      return {
+        DeliveryDate: arrival.DeliveryDate?.toString() || 'N/A',
+        receiptMethod: arrival.receiptMethod || 'N/A',
+        receivingFile: arrival.receivingFile || 'N/A',
+      };
+    default:
+      return null;
+  }
+}
+
+// ——— ترجمة واجهة عامة ———
+const ui = {
+  en: {
+    title: 'Order timeline: {name}',
+    subtitle: 'Track progress in real time',
+    progress: 'Progress: {percentage}%',
+    completed: 'Completed',
+    inProgress: 'In progress',
+    pending: 'Pending',
+    uploadLabel: 'Upload medical check file',
+    uploadButton: 'Upload',
+    uploading: 'Uploading...',
+    uploadSuccess: 'Uploaded successfully. ',
+    uploadError: 'Upload failed.',
+    viewFile: 'View file',
+    medicalFileUploaded: 'Medical file already uploaded. ',
+    medicalFileRestricted: 'Upload is only allowed for the current stage when previous steps are done.',
+    orderNotFound: 'Order not found',
+  },
+  ar: {
+    title: 'الجدول الزمني للطلب: {name}',
+    subtitle: 'تتبع التقدم لحظياً',
     progress: 'التقدم: {percentage}%',
     completed: 'مكتمل',
     inProgress: 'قيد التنفيذ',
     pending: 'معلق',
     uploadLabel: 'رفع ملف الفحص الطبي',
-    uploadButton: 'رفع الملف',
+    uploadButton: 'رفع',
     uploading: 'جارٍ الرفع...',
-    uploadSuccess: 'تم رفع الملف بنجاح!',
-    uploadError: 'خطأ أثناء رفع الملف. الرجاء المحاولة مرة أخرى.',
+    uploadSuccess: 'تم الرفع بنجاح. ',
+    uploadError: 'فشل الرفع.',
     viewFile: 'عرض الملف',
-    medicalFileUploaded: 'تم رفع الملف الطبي بالفعل.',
-    medicalFileRestricted: 'رفع الملف الطبي مسموح فقط خلال المرحلة الحالية.',
+    medicalFileUploaded: 'تم رفع الملف مسبقاً. ',
+    medicalFileRestricted: 'الرفع متاح للمرحلة الحالية بعد إكمال المراحل السابقة.',
     orderNotFound: 'الطلب غير موجود',
-    stageDetails: {
-      'الربط مع مساند': {
-        'Internal Musaned Contract': 'عقد مساند الداخلي',
-        'Date of Application': 'تاريخ التقديم',
-      },
-      'الربط مع مساند الخارجي': {
-        'External Musaned Contract': 'عقد مساند الخارجي',
-        'External Date Linking': 'تاريخ الربط الخارجي',
-      },
-      'الربط مع المكتب الخارجي': {
-        'External Office Approval': 'موافقة المكتب الخارجي',
-        'External Office File': 'ملف المكتب الخارجي',
-      },
-      'الفحص الطبي': {
-        'Medical Check File': 'ملف الفحص الطبي',
-      },
-      'الربط مع الوكالة': {
-        'Agency Date': 'تاريخ الوكالة',
-      },
-      'ختم السفارة': {
-        'Embassy Sealing': 'ختم السفارة',
-      },
-      'حجز التذكرة': {
-        'Ticket File': 'ملف التذكرة',
-        'Booking Date': 'تاريخ الحجز',
-      },
-      'الاستلام': {
-        'Receiving File': 'ملف الاستلام',
-        'Delivery Date': 'تاريخ التسليم',
-      },
-    },
+  },
+  fra: {
+    title: 'Chronologie: {name}',
+    subtitle: 'Suivi en temps réel',
+    progress: 'Progression : {percentage}%',
+    completed: 'Terminé',
+    inProgress: 'En cours',
+    pending: 'En attente',
+    uploadLabel: 'Télécharger le fichier médical',
+    uploadButton: 'Envoyer',
+    uploading: 'Envoi...',
+    uploadSuccess: 'Envoyé. ',
+    uploadError: 'Échec.',
+    viewFile: 'Voir',
+    medicalFileUploaded: 'Fichier déjà envoyé. ',
+    medicalFileRestricted: 'Envoi réservé à l’étape en cours.',
+    orderNotFound: 'Commande introuvable',
+  },
+  ur: {
+    title: 'ٹائم لائن: {name}',
+    subtitle: 'ریک ٹائم میں پیشرفت',
+    progress: 'پیشرفت: {percentage}%',
+    completed: 'مکمل',
+    inProgress: 'جاری',
+    pending: 'زیر التواء',
+    uploadLabel: 'طبی فائل',
+    uploadButton: 'اپ لوڈ',
+    uploading: 'اپ لوڈ...',
+    uploadSuccess: 'کامیاب۔ ',
+    uploadError: 'ناکام۔',
+    viewFile: 'دیکھیں',
+    medicalFileUploaded: 'پہلے سے موجود۔ ',
+    medicalFileRestricted: 'موجودہ مرحلے کے لیے۔',
+    orderNotFound: 'نہیں ملا',
   },
 };
 
+type AppLanguage = 'en' | 'fra' | 'ur' | 'ar';
+
+function isAppLanguage(v: string | null | undefined): v is AppLanguage {
+  return v === 'en' || v === 'fra' || v === 'ur' || v === 'ar';
+}
+
+// ⚠️ استخدم متغيرات بيئة؛ لا تضع مفاتيح في الكود
+const s3 =
+  typeof window !== 'undefined'
+    ? new AWS.S3({
+        accessKeyId: process.env.NEXT_PUBLIC_DO_SPACES_KEY,
+        secretAccessKey: process.env.NEXT_PUBLIC_DO_SPACES_SECRET,
+        endpoint: process.env.NEXT_PUBLIC_DO_SPACES_ENDPOINT,
+        s3ForcePathStyle: true,
+        signatureVersion: 'v4',
+      })
+    : null;
+
 export default function TimelinePage() {
   const { id } = useParams();
-  const { language } = useLanguage(); // Get language from context
-  const [order, setOrder] = useState<NewOrder | null>(null);
-  const [arrival, setArrival] = useState<ArrivalList | null>(null);
+  const { language } = useLanguage();
+
+  const [order, setOrder] = useState<OrderForTimeline | null>(null);
+  const [arrival, setArrival] = useState<ArrivalTimeline | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedStage, setExpandedStage] = useState<string | null>(null);
+  const [expandedStage, setExpandedStage] = useState<TrackOrderStep | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
 
-  // Get language from local storage if context is not available
-  const ISSERVER = typeof window === 'undefined';
-  let lang: string = language;
-  if (!ISSERVER && !language) {
-    lang = localStorage.getItem('language') || 'en';
+  let lang: AppLanguage = isAppLanguage(language) ? language : 'en';
+  if (typeof window !== 'undefined' && !isAppLanguage(language)) {
+    const stored = localStorage.getItem('language');
+    if (isAppLanguage(stored)) lang = stored;
   }
 
-  // Set RTL for Urdu
+  const t = ui[lang];
+  const stepLabels = STEP_LABELS[lang];
+
+  const timelineCtx = useMemo(
+    () => ({
+      arrival,
+      visaNumber: order?.visa?.visaNumber ?? arrival?.visaNumber ?? null,
+      homemaidOfficeName: order?.HomeMaid?.officeName ?? null,
+    }),
+    [arrival, order]
+  );
+
+  const firstIncomplete = useMemo(() => getFirstIncompleteIndex(timelineCtx), [timelineCtx]);
+  const completedCount = useMemo(
+    () => TRACK_ORDER_STEPS.filter((s) => isStepCompleted(s, timelineCtx)).length,
+    [timelineCtx]
+  );
+  const progressPercentage = (completedCount / TRACK_ORDER_STEPS.length) * 100;
+
   useEffect(() => {
-    document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
-    // alert(lang)
+    document.documentElement.dir = lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
   useEffect(() => {
@@ -283,135 +463,139 @@ export default function TimelinePage() {
       try {
         const response = await fetch(`/api/neworder/${id}`);
         const data = await response.json();
-        setOrder(data.order);
-        setArrival(data.arrival);
-      } catch (error) {
-        console.error('Error fetching order:', error);
+        setOrder(data.order ?? data);
+        setArrival(data.arrival ?? null);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrder();
+    if (id) fetchOrder();
   }, [id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
       setUploadStatus('idle');
     }
   };
 
   const handleFileUpload = async () => {
-    if (!file) return;
-
+    if (!file || !s3) return;
     setUploadStatus('uploading');
     const fileName = `medical-check/${id}/${Date.now()}_${file.name}`;
+    const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
 
     try {
-      await s3.upload({
-        Bucket: process.env.DO_SPACES_BUCKET || 'your-bucket-name',
-        Key: fileName,
-        Body: file,
-        ACL: 'public-read',
-        ContentType: file.type,
-      }).promise();
+      await s3
+        .upload({
+          Bucket: bucket,
+          Key: fileName,
+          Body: file,
+          ACL: 'public-read',
+          ContentType: file.type,
+        })
+        .promise();
 
-      const fileUrl = `https://${process.env.DO_SPACES_BUCKET}.${process.env.DO_SPACES_ENDPOINT}/${fileName}`;
+      const endpoint = process.env.NEXT_PUBLIC_DO_SPACES_ENDPOINT || '';
+      const fileUrl = `https://${bucket}.${endpoint}/${fileName}`;
       setUploadedFileUrl(fileUrl);
       setUploadStatus('success');
 
-      await fetch(`/api/neworder/${id}`, {
+      const patchRes = await fetch(`/api/neworder/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ medicalCheckFile: fileUrl }),
       });
-    } catch (error) {
-      console.error('Error uploading file:', error);
+      if (patchRes.ok) {
+        const patchData = await patchRes.json();
+        if (patchData.arrival) setArrival(patchData.arrival as ArrivalTimeline);
+      }
+    } catch (err) {
+      console.error(err);
       setUploadStatus('error');
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1 }}
           className="rounded-full h-16 w-16 border-t-4 border-indigo-500"
-        ></motion.div>
+        />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="text-center text-red-500 text-xl font-semibold py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
-        {translations[lang]?.orderNotFound}
+      <div className="text-center text-red-500 text-xl font-semibold py-20">
+        {t.orderNotFound}
       </div>
     );
   }
 
-  const currentStageIndex = order.bookingstatus ? translations[lang]?.stages.indexOf(order?.bookingstatus) : -1;
-  const progressPercentage = ((currentStageIndex + 1) / translations[lang]?.stages.length) * 100;
+  const clientName = order.ClientName || String(id);
 
   return (
-    <div className="min-h-screen flex font-sans" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex font-sans" dir={lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr'}>
       <Sidebar />
-      <div 
-      
-      className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-              {translations[lang]?.title.replace('{name}', order.ClientName)}
+              {t.title.replace('{name}', clientName)}
             </h1>
-            <p className="mt-4 text-lg text-gray-600">{translations[lang]?.subtitle}</p>
+            <p className="mt-4 text-lg text-gray-600">{t.subtitle}</p>
           </motion.div>
 
           <div className="mb-12">
-            <div className="relative pt-1">
-              <div className="flex mb-2 items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-100">
-                    {translations[lang].progress.replace('{percentage}', Math.round(progressPercentage).toString())}
-                  </span>
-                </div>
-              </div>
-              <div className="overflow-hidden h-4 mb-4 text-xs flex rounded bg-indigo-100">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercentage}%` }}
-                  transition={{ duration: 1, ease: 'easeOut' }}
-                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500"
-                ></motion.div>
-              </div>
+            <span className="text-xs font-semibold inline-block py-1 px-2 rounded-full text-indigo-600 bg-indigo-100">
+              {t.progress.replace('{percentage}', Math.round(progressPercentage).toString())}
+            </span>
+            <div className="overflow-hidden h-4 mt-2 text-xs flex rounded bg-indigo-100">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercentage}%` }}
+                transition={{ duration: 0.8 }}
+                className="bg-indigo-500"
+              />
             </div>
           </div>
 
           <div className="relative">
-            <div className={`absolute ${lang === 'ur' ? 'right-8' : 'left-8'} top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600`}></div>
+            <div
+              className={`absolute ${lang === 'ur' || lang === 'ar' ? 'right-8' : 'left-8'} top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600`}
+            />
 
-            {translations[lang].stages.map((stage, index) => {
-              const isCompleted = index <= currentStageIndex;
-              const isCurrent = index === currentStageIndex;
-              const stageDetails = getStageDetails(stage, arrival, lang);
+            {TRACK_ORDER_STEPS.map((stage, index) => {
+              const stepHasInfo = isStepCompleted(stage, timelineCtx);
+              const isCompleted = stepHasInfo;
+              const isCurrent =
+                !stepHasInfo &&
+                index === firstIncomplete &&
+                firstIncomplete < TRACK_ORDER_STEPS.length;
+              const stageDetails = getStageDetails(stage, arrival, t.viewFile);
               const isExpanded = expandedStage === stage;
-              const isUploadStage = stage === translations[lang].stages[3]; // 'Medical Check' stage
+              const isUploadStage = stage === 'medicalCheck';
+              const allowMedicalUpload =
+                isUploadStage &&
+                isCurrent &&
+                canCompleteStep('medicalCheck', timelineCtx);
 
               return (
                 <motion.div
                   key={stage}
-                  initial={{ opacity: 0, x: lang === 'ur' ? 50 : -50 }}
+                  initial={{ opacity: 0, x: lang === 'ur' || lang === 'ar' ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.2, duration: 0.5 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
                   className="mb-10 flex items-start"
                 >
                   <motion.div
-                    whileHover={{ scale: 1.2, rotate: 10 }}
+                    whileHover={{ scale: 1.05 }}
                     className="flex-shrink-0 w-16 h-16 flex items-center justify-center rounded-full bg-white border-4 border-indigo-200 shadow-lg z-10"
                   >
                     {isCompleted ? (
@@ -423,79 +607,85 @@ export default function TimelinePage() {
                     )}
                   </motion.div>
 
-                  <div className="ml-8 w-full">
+                  <div className={lang === 'ur' || lang === 'ar' ? 'mr-8' : 'ml-8'} style={{ width: '100%' }}>
                     <motion.div
-                      className="bg-white bg-opacity-80 backdrop-blur-md p-6 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 cursor-pointer"
+                      className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-xl cursor-pointer"
                       onClick={() => setExpandedStage(isExpanded ? null : stage)}
-                      whileHover={{ y: -5 }}
+                      whileHover={{ y: -2 }}
                     >
                       <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-800">{stage}</h2>
+                        <h2 className="text-2xl font-bold text-gray-800">{stepLabels[stage]}</h2>
                         <FaInfoCircle className="text-indigo-500 text-lg" />
                       </div>
                       <p className="text-gray-600 mt-2 font-medium">
-                        {isCompleted ? translations[lang].completed : isCurrent ? translations[lang].inProgress : translations[lang].pending}
+                        {isCompleted ? t.completed : isCurrent ? t.inProgress : t.pending}
                       </p>
+
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="mt-4 text-gray-700"
+                            className="mt-4 text-gray-700 space-y-1"
                           >
                             {stageDetails &&
                               Object.entries(stageDetails).map(([key, value]) => (
-                                <p key={key} className="flex items-center space-x-2">
-                                  <span className="font-semibold text-indigo-600">{translations[lang].stageDetails[stage][key]}:</span>
+                                <p key={key} className="flex flex-wrap gap-2">
+                                  <span className="font-semibold text-indigo-600">{key}:</span>
                                   <span>{value}</span>
                                 </p>
                               ))}
+
                             {isUploadStage && (
                               <div className="mt-4">
                                 {arrival?.medicalCheckFile ? (
                                   <p className="text-green-600 font-medium">
-                                    {translations[lang].medicalFileUploaded}
-                                    <a href={arrival.medicalCheckFile} target="_blank" rel="noopener noreferrer" className="underline text-indigo-600">
-                                      {translations[lang].viewFile}
+                                    {t.medicalFileUploaded}
+                                    <a
+                                      href={arrival.medicalCheckFile}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="underline text-indigo-600"
+                                    >
+                                      {t.viewFile}
                                     </a>
                                   </p>
-                                ) : isCurrent ? (
+                                ) : allowMedicalUpload ? (
                                   <>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                      {translations[lang].uploadLabel}
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-700">{t.uploadLabel}</label>
                                     <input
                                       type="file"
                                       accept=".pdf,.doc,.docx,.jpg,.png"
                                       onChange={handleFileChange}
-                                      className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                      className="mt-1 block w-full text-sm text-gray-500"
                                     />
                                     {file && (
                                       <button
-                                        onClick={handleFileUpload}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleFileUpload();
+                                        }}
                                         disabled={uploadStatus === 'uploading'}
-                                        className={`mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${uploadStatus === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className="mt-2 inline-flex items-center px-4 py-2 rounded-full bg-indigo-600 text-white text-sm disabled:opacity-50"
                                       >
                                         <FaUpload className="mr-2" />
-                                        {uploadStatus === 'uploading' ? translations[lang].uploading : translations[lang].uploadButton}
+                                        {uploadStatus === 'uploading' ? t.uploading : t.uploadButton}
                                       </button>
                                     )}
                                     {uploadStatus === 'success' && (
                                       <p className="mt-2 text-green-600">
-                                        {translations[lang].uploadSuccess}
+                                        {t.uploadSuccess}
                                         <a href={uploadedFileUrl || '#'} target="_blank" rel="noopener noreferrer" className="underline">
-                                          {translations[lang].viewFile}
+                                          {t.viewFile}
                                         </a>
                                       </p>
                                     )}
-                                    {uploadStatus === 'error' && (
-                                      <p className="mt-2 text-red-600">{translations[lang].uploadError}</p>
-                                    )}
+                                    {uploadStatus === 'error' && <p className="mt-2 text-red-600">{t.uploadError}</p>}
                                   </>
                                 ) : (
-                                  <p className="text-gray-500 italic">{translations[lang].medicalFileRestricted}</p>
+                                  <p className="text-gray-500 italic">{t.medicalFileRestricted}</p>
                                 )}
                               </div>
                             )}
@@ -513,61 +703,3 @@ export default function TimelinePage() {
     </div>
   );
 }
-
-const getStageDetails = (stage: string, arrival: ArrivalList | null, lang: string) => {
-  if (!arrival) return null;
-
-  switch (stage) {
-    case translations[lang].stages[0]: // 'Link with Musaned'
-      return {
-        'Internal Musaned Contract': arrival.InternalmusanedContract || 'N/A',
-        'Date of Application': arrival.DateOfApplication?.toString() || 'N/A',
-      };
-    case translations[lang].stages[1]: // 'Link with External Musaned'
-      return {
-        'External Musaned Contract': arrival.externalmusanedContract || 'N/A',
-        'External Date Linking': arrival.ExternalDateLinking?.toString() || 'N/A',
-      };
-    case translations[lang].stages[2]: // 'Link with External Office'
-      return {
-        'External Office Approval': arrival.ExternalOFficeApproval?.toString() || 'N/A',
-        'External Office File': arrival.externalOfficeFile ? (
-          <a href={arrival.externalOfficeFile} target="_blank" rel="noopener noreferrer" className="underline">
-            {translations[lang].viewFile}
-          </a>
-        ) : (
-          'N/A'
-        ),
-      };
-    case translations[lang].stages[3]: // 'Medical Check'
-      return {
-        'Medical Check File': arrival.medicalCheckFile ? (
-          <a href={arrival.medicalCheckFile} target="_blank" rel="noopener noreferrer" className="underline">
-            {translations[lang].viewFile}
-          </a>
-        ) : (
-          'N/A'
-        ),
-      };
-    case translations[lang].stages[4]: // 'Link with Agency'
-      return {
-        'Agency Date': arrival.AgencyDate?.toString() || 'N/A',
-      };
-    case translations[lang].stages[5]: // 'Embassy Sealing'
-      return {
-        'Embassy Sealing': arrival.EmbassySealing?.toString() || 'N/A',
-      };
-    case translations[lang].stages[6]: // 'Ticket Booking'
-      return {
-        'Ticket File': arrival.ticketFile || 'N/A',
-        'Booking Date': arrival.BookinDate?.toString() || 'N/A',
-      };
-    case translations[lang].stages[7]: // 'Receiving'
-      return {
-        'Receiving File': arrival.receivingFile || 'N/A',
-        'Delivery Date': arrival.DeliveryDate?.toString() || 'N/A',
-      };
-    default:
-      return null;
-  }
-};

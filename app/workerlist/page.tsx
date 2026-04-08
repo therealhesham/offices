@@ -16,7 +16,6 @@ import {
   CalendarIcon,
   HeartIcon,
   FolderOpenIcon,
-  TrashIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -43,10 +42,6 @@ const translations = {
     maritalStatus: 'Marital Status',
     editProfile: 'Edit Profile',
     notAvailable: 'Not Available',
-    confirmDelete: 'Confirm Delete',
-    confirmDeleteMessage: 'Are you sure you want to delete this worker?',
-    cancel: 'Cancel',
-    delete: 'Delete',
   },
   fra: {
     title: 'Liste des travailleurs',
@@ -67,10 +62,6 @@ const translations = {
     maritalStatus: 'État civil',
     editProfile: 'Modifier le profil',
     notAvailable: 'Non disponible',
-    confirmDelete: 'Confirmer la suppression',
-    confirmDeleteMessage: 'Êtes-vous sûr de vouloir supprimer ce travailleur ?',
-    cancel: 'Annuler',
-    delete: 'Supprimer',
   },
   ur: {
     title: 'ورکرز کی فہرست',
@@ -91,10 +82,6 @@ const translations = {
     maritalStatus: 'ازدواجی حیثیت',
     editProfile: 'پروفائل ایڈٹ کریں',
     notAvailable: 'دستیاب نہیں',
-    confirmDelete: 'حذف کی تصدیق کریں',
-    confirmDeleteMessage: 'کیا آپ واقعی اس ورکر کو حذف کرنا چاہتے ہیں؟',
-    cancel: 'منسوخ کریں',
-    delete: 'حذف کریں',
   },
 };
 
@@ -109,8 +96,6 @@ export default function Table() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [width, setWidth] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
 
   const pageRef = useRef(1);
   const isFetchingRef = useRef(false);
@@ -132,41 +117,6 @@ export default function Table() {
 
 
   }, [language]);
-
-  const deleteHm = async (id: string) => {
-    try {
-      const queryParams = new URLSearchParams({ id });
-      const response = await fetch(`/api/list?${queryParams}`, {
-        headers: {
-          authorization: `bearer ${storage}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        method: 'DELETE',
-      });
-
-      if (response.status === 201) {
-        // Remove the deleted item from the data array
-        setData((prevData) => prevData.filter((item) => item.id !== id));
-        setShowModal(false);
-        setItemToDelete(null);
-      } else {
-        console.error('Failed to delete item:', await response.json());
-      }
-    } catch (error) {
-      console.error('Error deleting item:', error);
-    }
-  };
-
-  const handleDeleteClick = (id: string) => {
-    setItemToDelete(id);
-    setShowModal(true);
-  };
-
-  const handleCancelDelete = () => {
-    setShowModal(false);
-    setItemToDelete(null);
-  };
 
   const fetchData = async () => {
     if (isFetchingRef.current || !hasMore) return;
@@ -256,50 +206,6 @@ export default function Table() {
 
   return (
     <>
-      {/* Confirmation Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full"
-            >
-              <h2 className="text-lg font-bold text-gray-800 mb-4">
-                {t.confirmDelete}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {t.confirmDeleteMessage}
-              </p>
-              <div className="flex justify-end gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCancelDelete}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  {t.cancel}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => deleteHm(itemToDelete)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  {t.delete}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="min-h-screen bg-gray-50">
         <div className={`flex ${width > 600 ? 'flex-row' : 'flex-col'}`}>
           <Sidebar />
@@ -452,17 +358,6 @@ export default function Table() {
   >
     <PencilIcon className="w-5 h-5" />
     <span>{t.editProfile}</span>
-  </motion.button>
-
-  {/* Delete Button */}
-  <motion.button
-    onClick={() => handleDeleteClick(item.id)}
-    className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all flex items-center justify-center"
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    aria-label={`Delete profile for ${item.Name}`}
-  >
-    <TrashIcon className="w-5 h-5" />
   </motion.button>
 </div>
                     </motion.div>

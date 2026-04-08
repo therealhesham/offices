@@ -39,9 +39,8 @@ const recent = await prisma.homemaid.count({
     officeName: verify.office,
     NewOrder: {
       some: {
-        createdAt: {
-          gte: new Date(new Date().setDate(new Date().getDate() - 7)), // 7 days ago
-        },
+        HomemaidId: { not: null },
+        bookingstatus: { contains: 'new' },
       },
     },
   },

@@ -15,6 +15,7 @@ import { jwtDecode } from "jwt-decode";
 import ChatWidget from '@/components/chat_widget';
 import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip as ChartTooltip, Legend, Title } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { translateBookingStatus } from '../lib/bookingStatusTranslations';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, ChartTooltip, Legend, Title);
@@ -167,7 +168,7 @@ const[officeName,setOfficeName]=useState("")
         value: counting?.recent,
         icon: <FiList />,
         id: 'new-reservations',
-        link: '/bookedhomemaid',
+        link: '/bookedhomemaid?filter=new',
       },
       {
         title:
@@ -867,6 +868,10 @@ const[officeName,setOfficeName]=useState("")
             ) : dataList.length > 0 ? (
               <ul role="list" aria-label="Recent reservations list">
                 {dataList.map((reservation) => (
+                  (() => {
+                    const status = reservation.NewOrder[0].bookingstatus;
+                    const isInitialBooking = status === 'officeLinkInfo' || status === 'حجز جديد' || status === 'new_booking';
+                    return (
                   <li
                     key={reservation.id}
                     className={`flex justify-between p-4 border-b ${
@@ -899,28 +904,16 @@ const[officeName,setOfficeName]=useState("")
                     </div>
                     <div
                       className={`text-sm font-medium px-2 py-1 rounded ${
-                        reservation.NewOrder[0].bookingstatus === 'حجز جديد'
+                        isInitialBooking
                           ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {reservation.NewOrder[0].bookingstatus === 'حجز جديد'
-                        ? lang === 'ar'
-                          ? 'حجز جديد'
-                          : lang === 'fra'
-                          ? 'Nouvelle réservation'
-                          : lang === 'ur'
-                          ? 'نیا تحفظ'
-                          : 'New Booking'
-                        : lang === 'ar'
-                        ? 'قيد الانتظار'
-                        : lang === 'fra'
-                        ? 'En attente'
-                        : lang === 'ur'
-                        ? 'زیر التوا'
-                        : 'Pending'}
+                      {translateBookingStatus(status, lang || 'en')}
                     </div>
                   </li>
+                    );
+                  })()
                 ))}
                 <div className="mt-4 text-right">
                   <Link href="/bookedhomemaid">

@@ -5,6 +5,15 @@ import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import Sidebar from '@/app/components/Sidebar';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { HOMEMAID_LEVEL_KEYS, pickHomemaidString } from '@/app/lib/homemaidLevels';
+import {
+  skillLevels,
+  educationOptions,
+  experienceOptions,
+  maritalStatusOptions,
+  religionOptions,
+  selectOptionsWithCurrent,
+} from '@/app/lib/homemaidFormOptions';
 // Translation dictionary
 const translations = {
   en: {
@@ -26,35 +35,19 @@ const translations = {
       Religion: 'Religion',
       ArabicLanguageLeveL: 'Arabic Language Level',
       EnglishLanguageLevel: 'English Language Level',
-      LaundryLeveL: 'Laundry Level',
-      CookingLeveL: 'Cooking Level',
-      BabySitterLevel: 'Babysitting Level',
-      OldPeopleCare: 'Old People Care',
+      LaundryLevel: 'Laundry Level',
+      WashingLevel: 'Washing Level',
+      IroningLevel: 'Ironing Level',
+      CleaningLevel: 'Cleaning Level',
+      CookingLevel: 'Cooking Level',
+      SewingLevel: 'Sewing Level',
+      ChildcareLevel: 'Childcare / Babysitting',
+      ElderlycareLevel: 'Elderly Care Level',
       ExperienceYears: 'Years of Experience',
+      Experience: 'Experience level',
       experienceType: 'Experience Type',
       Education: 'Education',
       Salary: 'Salary',
-    },
-    options: {
-      maritalStatus: {
-        select: 'Select',
-        Single: 'Single',
-        Married: 'Married',
-        Divorced: 'Divorced',
-        Widowed: 'Widowed',
-      },
-      skillLevels: {
-        select: 'Select',
-        Beginner: 'Beginner',
-        Intermediate: 'Intermediate',
-        Advanced: 'Advanced',
-      },
-      laundryCookingLevels: {
-        select: 'Select',
-        Basic: 'Basic',
-        Intermediate: 'Intermediate',
-        Advanced: 'Advanced',
-      },
     },
     errors: {
       fetchFailed: 'Error fetching CV',
@@ -63,6 +56,7 @@ const translations = {
     success: {
       updateSuccess: 'CV updated successfully!',
     },
+    selectPlaceholder: 'Select…',
   },
   fra: {
     title: 'Modifier le CV',
@@ -83,35 +77,19 @@ const translations = {
       Religion: 'Religion',
       ArabicLanguageLeveL: 'Niveau de langue arabe',
       EnglishLanguageLevel: 'Niveau de langue anglaise',
-      LaundryLeveL: 'Niveau de lessive',
-      CookingLeveL: 'Niveau de cuisine',
-      BabySitterLevel: 'Niveau de garde d’enfants',
-      OldPeopleCare: 'Soin des personnes âgées',
+      LaundryLevel: 'Niveau de lessive',
+      WashingLevel: 'Niveau de lavage',
+      IroningLevel: 'Niveau de repassage',
+      CleaningLevel: 'Niveau de nettoyage',
+      CookingLevel: 'Niveau de cuisine',
+      SewingLevel: 'Niveau de couture',
+      ChildcareLevel: 'Garde d’enfants',
+      ElderlycareLevel: 'Soin des personnes âgées',
       ExperienceYears: 'Années d’expérience',
+      Experience: 'Niveau d’expérience',
       experienceType: 'Type d’expérience',
       Education: 'Éducation',
       Salary: 'Salaire',
-    },
-    options: {
-      maritalStatus: {
-        select: 'Sélectionner',
-        Single: 'Célibataire',
-        Married: 'Marié',
-        Divorced: 'Divorcé',
-        Widowed: 'Veuf/Veuve',
-      },
-      skillLevels: {
-        select: 'Sélectionner',
-        Beginner: 'Débutant',
-        Intermediate: 'Intermédiaire',
-        Advanced: 'Avancé',
-      },
-      laundryCookingLevels: {
-        select: 'Sélectionner',
-        Basic: 'Basique',
-        Intermediate: 'Intermédiaire',
-        Advanced: 'Avancé',
-      },
     },
     errors: {
       fetchFailed: 'Erreur lors de la récupération du CV',
@@ -120,6 +98,7 @@ const translations = {
     success: {
       updateSuccess: 'CV mis à jour avec succès !',
     },
+    selectPlaceholder: 'Choisir…',
   },
   ur: {
     title: 'سی وی میں ترمیم کریں',
@@ -140,35 +119,19 @@ const translations = {
       Religion: 'مذہب',
       ArabicLanguageLeveL: 'عربی زبان کی سطح',
       EnglishLanguageLevel: 'انگریزی زبان کی سطح',
-      LaundryLeveL: 'لانڈری کی سطح',
-      CookingLeveL: 'کھانا پکانے کی سطح',
-      BabySitterLevel: 'بچوں کی دیکھ بھال کی سطح',
-      OldPeopleCare: 'بزرگوں کی دیکھ بھال',
+      LaundryLevel: 'لانڈری کی سطح',
+      WashingLevel: 'دھونے کی سطح',
+      IroningLevel: 'استری کی سطح',
+      CleaningLevel: 'صفائی کی سطح',
+      CookingLevel: 'کھانا پکانے کی سطح',
+      SewingLevel: 'سلائی کی سطح',
+      ChildcareLevel: 'بچوں کی دیکھ بھال',
+      ElderlycareLevel: 'بزرگوں کی دیکھ بھال',
       ExperienceYears: 'تجربے کے سال',
+      Experience: 'تجربے کی سطح',
       experienceType: 'تجربے کی قسم',
       Education: 'تعلیم',
       Salary: 'تنخواہ',
-    },
-    options: {
-      maritalStatus: {
-        select: 'منتخب کریں',
-        Single: 'غیر شادی شدہ',
-        Married: 'شادی شدہ',
-        Divorced: 'طلاق یافتہ',
-        Widowed: 'بیوہ/بیوہ',
-      },
-      skillLevels: {
-        select: 'منتخب کریں',
-        Beginner: 'ابتدائی',
-        Intermediate: 'درمیانی',
-        Advanced: 'اعلیٰ',
-      },
-      laundryCookingLevels: {
-        select: 'منتخب کریں',
-        Basic: 'بنیادی',
-        Intermediate: 'درمیانی',
-        Advanced: 'اعلیٰ',
-      },
     },
     errors: {
       fetchFailed: 'سی وی حاصل کرنے میں خرابی',
@@ -177,8 +140,47 @@ const translations = {
     success: {
       updateSuccess: 'سی وی کامیابی سے اپ ڈیٹ ہو گیا!',
     },
+    selectPlaceholder: 'منتخب کریں…',
   },
 };
+
+function toDateInputValue(iso: string | Date | null | undefined): string {
+  if (iso == null || iso === '') return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Keeps YYYY-MM-DD from the date picker; parses ISO only when loading from API. */
+function dateOfBirthInputValue(raw: string | undefined): string {
+  if (!raw) return '';
+  const s = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return toDateInputValue(s);
+}
+
+/** Full years since DOB (calendar), using local date parts for YYYY-MM-DD. */
+function computeAgeFromDobString(dob: string | undefined | null): number | null {
+  if (!dob?.trim()) return null;
+  const s = dob.trim();
+  let birth: Date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    birth = new Date(y, m - 1, d);
+  } else {
+    birth = new Date(s);
+  }
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  const todayMd = today.getMonth() * 32 + today.getDate();
+  const birthMd = birth.getMonth() * 32 + birth.getDate();
+  if (todayMd < birthMd) years -= 1;
+  return years >= 0 ? years : null;
+}
 
 interface Homemaid {
   id: number;
@@ -199,16 +201,17 @@ interface Homemaid {
   experienceType?: string;
   PassportStart?: string;
   PassportEnd?: string;
-  OldPeopleCare?: boolean;
   ArabicLanguageLeveL?: string;
   EnglishLanguageLevel?: string;
   Salary?: string;
-  LaundryLeveL?: string;
+  LaundryLevel?: string;
+  WashingLevel?: string;
   IroningLevel?: string;
-  CleaningLeveL?: string;
-  CookingLeveL?: string;
-  SewingLeveL?: string;
-  BabySitterLevel?: string;
+  CleaningLevel?: string;
+  CookingLevel?: string;
+  SewingLevel?: string;
+  ChildcareLevel?: string;
+  ElderlycareLevel?: string;
   Education?: string;
 }
 
@@ -235,7 +238,23 @@ export default function EditCV() {
         const response = await fetch(`/api/homemaid/${id}`);
         if (!response.ok) throw new Error('Failed to fetch CV');
         const data = await response.json();
-        setFormData(data);
+        const r = data as Record<string, unknown>;
+        const lvl = (keys: readonly string[]) =>
+          pickHomemaidString(r, keys) ?? '';
+        setFormData({
+          ...data,
+          dateofbirth: toDateInputValue(data.dateofbirth) || undefined,
+          ArabicLanguageLeveL: lvl(HOMEMAID_LEVEL_KEYS.arabic),
+          EnglishLanguageLevel: lvl(HOMEMAID_LEVEL_KEYS.english),
+          LaundryLevel: lvl(HOMEMAID_LEVEL_KEYS.laundry),
+          WashingLevel: lvl(HOMEMAID_LEVEL_KEYS.washing),
+          IroningLevel: lvl(HOMEMAID_LEVEL_KEYS.ironing),
+          CleaningLevel: lvl(HOMEMAID_LEVEL_KEYS.cleaning),
+          CookingLevel: lvl(HOMEMAID_LEVEL_KEYS.cooking),
+          SewingLevel: lvl(HOMEMAID_LEVEL_KEYS.sewing),
+          ChildcareLevel: lvl(HOMEMAID_LEVEL_KEYS.childcare),
+          ElderlycareLevel: lvl(HOMEMAID_LEVEL_KEYS.elderly),
+        });
       } catch (error) {
         toast.error(t.errors.fetchFailed);
       } finally {
@@ -258,10 +277,18 @@ export default function EditCV() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const dob = dateOfBirthInputValue(formData.dateofbirth);
+      const calculatedAge = computeAgeFromDobString(dob);
+      const payload = {
+        ...formData,
+        dateofbirth:
+          dob && dob.length > 0 ? `${dob}T00:00:00.000Z` : null,
+        age: calculatedAge ?? null,
+      };
       const response = await fetch(`/api/homemaid/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to update CV');
       toast.success(t.success.updateSuccess);
@@ -290,38 +317,64 @@ export default function EditCV() {
               {[
                 { name: 'Name', type: 'text', required: true },
                 { name: 'Nationalitycopy', type: 'text' },
-                { name: 'dateofbirth', type: 'text' },
-                { name: 'age', type: 'number' },
+                { name: 'dateofbirth', type: 'date' },
+                { name: 'age', type: 'computedAge' },
                 { name: 'Passportnumber', type: 'text' },
                 { name: 'phone', type: 'text' },
-                { name: 'maritalstatus', type: 'select', options: t.options.maritalStatus },
-                { name: 'Religion', type: 'text' },
+                {
+                  name: 'maritalstatus',
+                  type: 'select',
+                  optionList: maritalStatusOptions,
+                },
+                { name: 'Religion', type: 'select', optionList: religionOptions },
               ].map((field) => (
                 <div key={field.name}>
                   <label className="block text-sm font-medium text-gray-700">
                     {t.fields[field.name]}
                   </label>
-                  {field.type === 'select' ? (
+                  {field.type === 'select' && field.optionList ? (
                     <select
                       name={field.name}
-                      value={formData[field.name] || ''}
+                      value={String(formData[field.name as keyof Homemaid] ?? '')}
                       onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       aria-label={t.fields[field.name]}
                     >
-                      <option value="">{field.options.select}</option>
-                      <option value="Single">{field.options.Single}</option>
-                      <option value="Married">{field.options.Married}</option>
-                      <option value="Divorced">{field.options.Divorced}</option>
-                      <option value="Widowed">{field.options.Widowed}</option>
+                      <option value="">{t.selectPlaceholder}</option>
+                      {selectOptionsWithCurrent(
+                        formData[field.name as keyof Homemaid] as string | undefined,
+                        field.optionList
+                      ).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
                     </select>
+                  ) : field.type === 'computedAge' ? (
+                    <output
+                      className="mt-1 block w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-800 shadow-inner"
+                      aria-label={t.fields.age}
+                      aria-live="polite"
+                    >
+                      {(() => {
+                        const n = computeAgeFromDobString(
+                          dateOfBirthInputValue(formData.dateofbirth)
+                        );
+                        return n != null ? String(n) : '—';
+                      })()}
+                    </output>
                   ) : (
                     <input
                       type={field.type}
                       name={field.name}
-                      value={formData[field.name] || ''}
+                      value={
+                        field.type === 'date'
+                          ? dateOfBirthInputValue(formData[field.name] as string | undefined)
+                          : String(formData[field.name] ?? '')
+                      }
                       onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      max={field.type === 'date' ? new Date().toISOString().slice(0, 10) : undefined}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       required={field.required}
                       aria-label={t.fields[field.name]}
                     />
@@ -335,43 +388,44 @@ export default function EditCV() {
           <div className="bg-gray-50 rounded-xl p-6">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">{t.skills}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { name: 'ArabicLanguageLeveL', type: 'select', options: t.options.skillLevels },
-                { name: 'EnglishLanguageLevel', type: 'select', options: t.options.skillLevels },
-                { name: 'LaundryLeveL', type: 'select', options: t.options.laundryCookingLevels },
-                { name: 'CookingLeveL', type: 'select', options: t.options.laundryCookingLevels },
-                { name: 'BabySitterLevel', type: 'select', options: t.options.laundryCookingLevels },
-                { name: 'OldPeopleCare', type: 'checkbox' },
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t.fields[field.name]}
-                  </label>
-                  {field.type === 'select' ? (
+              {(
+                [
+                  'ArabicLanguageLeveL',
+                  'EnglishLanguageLevel',
+                  'LaundryLevel',
+                  'WashingLevel',
+                  'IroningLevel',
+                  'CleaningLevel',
+                  'CookingLevel',
+                  'SewingLevel',
+                  'ChildcareLevel',
+                  'ElderlycareLevel',
+                ] as const
+              ).map((name) => {
+                const raw = String(formData[name] ?? '');
+                const opts = selectOptionsWithCurrent(raw, skillLevels);
+                return (
+                  <div key={name}>
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t.fields[name]}
+                    </label>
                     <select
-                      name={field.name}
-                      value={formData[field.name] || ''}
+                      name={name}
+                      value={raw}
                       onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      aria-label={t.fields[field.name]}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      aria-label={t.fields[name]}
                     >
-                      <option value="">{field.options.select}</option>
-                      <option value="Beginner">{field.options.Beginner}</option>
-                      <option value="Intermediate">{field.options.Intermediate}</option>
-                      <option value="Advanced">{field.options.Advanced}</option>
+                      <option value="">{t.selectPlaceholder}</option>
+                      {opts.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
                     </select>
-                  ) : (
-                    <input
-                      type="checkbox"
-                      name={field.name}
-                      checked={formData[field.name] || false}
-                      onChange={handleChange}
-                      className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      aria-label={t.fields[field.name]}
-                    />
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -379,24 +433,59 @@ export default function EditCV() {
           <div className="bg-gray-50 rounded-xl p-6">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">{t.experienceEducation}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { name: 'ExperienceYears', type: 'text' },
-                { name: 'experienceType', type: 'text' },
-                { name: 'Education', type: 'text' },
-                { name: 'Salary', type: 'text' },
-              ].map((field) => (
+              {(
+                [
+                  { name: 'ExperienceYears', type: 'text' as const },
+                  {
+                    name: 'Experience',
+                    type: 'select' as const,
+                    optionList: experienceOptions,
+                  },
+                  {
+                    name: 'experienceType',
+                    type: 'select' as const,
+                    optionList: experienceOptions,
+                  },
+                  {
+                    name: 'Education',
+                    type: 'select' as const,
+                    optionList: educationOptions,
+                  },
+                  { name: 'Salary', type: 'text' as const },
+                ] as const
+              ).map((field) => (
                 <div key={field.name}>
                   <label className="block text-sm font-medium text-gray-700">
                     {t.fields[field.name]}
                   </label>
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    value={formData[field.name] || ''}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    aria-label={t.fields[field.name]}
-                  />
+                  {field.type === 'select' ? (
+                    <select
+                      name={field.name}
+                      value={String(formData[field.name as keyof Homemaid] ?? '')}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      aria-label={t.fields[field.name]}
+                    >
+                      <option value="">{t.selectPlaceholder}</option>
+                      {selectOptionsWithCurrent(
+                        formData[field.name as keyof Homemaid] as string | undefined,
+                        field.optionList
+                      ).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name={field.name}
+                      value={String(formData[field.name as keyof Homemaid] ?? '')}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      aria-label={t.fields[field.name]}
+                    />
+                  )}
                 </div>
               ))}
             </div>

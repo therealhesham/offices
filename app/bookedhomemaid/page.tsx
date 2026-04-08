@@ -1,6 +1,6 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DocumentTextIcon,
@@ -20,6 +20,7 @@ import {
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/navigationbar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { translateBookingStatus } from '../lib/bookingStatusTranslations';
 
 const translations = {
   en: {
@@ -43,6 +44,7 @@ const translations = {
     details: 'Details',
     timeline: 'Application Timeline',
     notAvailable: 'N/A',
+    titleNew: 'New reservations',
   },
   fra: {
     title: 'Réservée',
@@ -65,6 +67,7 @@ const translations = {
     details: 'Les détails',
     timeline: "Timeline de l'app",
     notAvailable: 'Non disponible',
+    titleNew: 'Nouvelles réservations',
   },
   ur: {
     title: 'بک کروایا',
@@ -87,6 +90,7 @@ const translations = {
     details: 'تفصيلات',
     timeline: 'وقتِ درخواست',
     notAvailable: 'دستیاب نہیں',
+    titleNew: 'نئے تحفظات',
   },
   ar: {
     title: 'الخادمات المحجوزات',
@@ -109,6 +113,7 @@ const translations = {
     details: 'التفاصيل',
     timeline: 'الجدول الزمني للطلب',
     notAvailable: 'غير متاح',
+    titleNew: 'الحجوزات الجديدة',
   },
 };
 
@@ -119,7 +124,10 @@ function getDate(date) {
   return currentDate.toISOString().split('T')[0];
 }
 
-export default function Table() {
+function BookedHomemaidTable() {
+  const searchParams = useSearchParams();
+  const listFilter = searchParams.get('filter') === 'new' ? 'new' : null;
+
   const [filters, setFilters] = useState({
     Name: '',
     age: '',
@@ -145,7 +153,7 @@ export default function Table() {
   }, []);
 
   const fetchData = async (reset = false) => {
-    if (isFetchingRef.current || !hasMore) return;
+    if (isFetchingRef.current || (!reset && !hasMore)) return;
     isFetchingRef.current = true;
     setLoading(true);
     setError(null);
@@ -158,6 +166,7 @@ export default function Table() {
         Passportnumber: filters.Passportnumber,
         page: String(pageRef.current),
       });
+      if (listFilter === 'new') queryParams.set('filter', 'new');
 
       const response = await fetch(`/api/bookedhomemaid?${queryParams}`, {
         headers: {
@@ -175,6 +184,7 @@ export default function Table() {
         pageRef.current += 1;
       } else {
         setHasMore(false);
+        if (reset) setData([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -214,12 +224,16 @@ export default function Table() {
       if (node) observer.observe(node);
       return () => observer.disconnect();
     },
-    [loading, hasMore, storage, filters]
+    [loading, hasMore, storage, filters, listFilter]
   );
 
   useEffect(() => {
-    if (storage) fetchData(true);
-  }, [storage, filters]);
+    if (!storage) return;
+    isFetchingRef.current = false;
+    setHasMore(true);
+    pageRef.current = 1;
+    fetchData(true);
+  }, [storage, filters, listFilter]);
 
   const handleFilterChange = (e, column) => {
     const value = e.target.value;
@@ -271,7 +285,7 @@ export default function Table() {
             transition={{ duration: 0.5 }}
             className="text-4xl font-extrabold text-gray-900 text-center mb-10 tracking-tight"
           >
-            {t.title}
+            {listFilter === 'new' ? t.titleNew : t.title}
           </motion.h1>
 
           <motion.div
@@ -431,7 +445,7 @@ export default function Table() {
                         { label: t.maritalStatus, value: item.maritalstatus, icon: <HeartIcon className="h-5 w-5" /> },
                         {
                           label: t.bookingStatus,
-                          value: item.NewOrder[0].bookingstatus,
+                          value: translateBookingStatus(item.NewOrder[0].bookingstatus, language),
                           icon: <TagIcon className="h-5 w-5" />,
                           isStatus: true,
                         },
@@ -523,5 +537,19 @@ export default function Table() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookedHomemaidPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-600">
+          Loading...
+        </div>
+      }
+    >
+      <BookedHomemaidTable />
+    </Suspense>
   );
 }

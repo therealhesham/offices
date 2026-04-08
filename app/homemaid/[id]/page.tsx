@@ -9,6 +9,7 @@ import Image from 'next/image';
 import Sidebar from '@/app/components/Sidebar';
 import { PencilIcon } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { homemaidDisplayAge, homemaidLevel } from '@/app/lib/homemaidLevels';
 
 interface Homemaid {
   id: number;
@@ -22,17 +23,8 @@ interface Homemaid {
   ExperienceYears: string | null;
   Experience: string | null;
   experienceType: string | null;
-  ArabicLanguageLeveL: string | null;
-  EnglishLanguageLevel: string | null;
-  Salary: string | null;
-  LaundryLeveL: string | null;
-  IroningLevel: string | null;
-  CleaningLeveL: string | null;
-  CookingLeveL: string | null;
-  SewingLeveL: string | null;
-  BabySitterLevel: string | null;
   Education: string | null;
-  OldPeopleCare: boolean | null;
+  Salary: string | null;
   PassportStart: string | null;
   PassportEnd: string | null;
   phone: string | null;
@@ -47,6 +39,18 @@ interface Homemaid {
   Housed: { id: number; isHoused: boolean }[];
   inHouse: { id: number; houseentrydate: string; checkIns: { id: number; breakfastOption: string }[] }[];
   logs: { id: number; Status: string; createdAt: string }[];
+}
+
+function getDate(date: string | Date | null | undefined): string | null {
+  if (!date) return null;
+  const currentDate = new Date(date);
+  const formatted =
+    currentDate.getDate() +
+    '/' +
+    (currentDate.getMonth() + 1) +
+    '/' +
+    currentDate.getFullYear();
+  return formatted;
 }
 
 const CVDetailsPage = () => {
@@ -146,7 +150,9 @@ const {language} = useLanguage()
               <div>
                 <h1 className="text-3xl font-bold">{homemaid.Name || 'N/A'}</h1>
                 <p className="text-lg">{homemaid.Nationalitycopy || 'N/A'}</p>
-                <p className="text-sm">Age: {homemaid.age || 'N/A'}</p>
+                <p className="text-sm">
+                  Age: {homemaidDisplayAge(homemaid as unknown as Record<string, unknown>)}
+                </p>
               </div>
             </div>
             <motion.button
@@ -189,10 +195,21 @@ const {language} = useLanguage()
                 </p>
                 <p>
                   <strong>Date of Birth:</strong>{' '}
-                  {homemaid.dateofbirth || 'N/A'}
+                  {getDate(homemaid.dateofbirth) ?? 'N/A'}
+                </p>
+                <p>
+                  <strong>Passport Start:</strong>{' '}
+                  {getDate(homemaid.PassportStart) ?? 'N/A'}
+                </p>
+                <p>
+                  <strong>Passport End:</strong>{' '}
+                  {getDate(homemaid.PassportEnd) ?? 'N/A'}
                 </p>
               </div>
               <div>
+                <p>
+                  <strong>Salary:</strong> {homemaid.Salary || 'N/A'}
+                </p>
                 <p>
                   <strong>Phone:</strong> {homemaid.phone || 'N/A'}
                 </p>
@@ -223,43 +240,48 @@ const {language} = useLanguage()
               <div>
                 <p>
                   <strong>Arabic Language Level:</strong>{' '}
-                  {homemaid.ArabicLanguageLeveL || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'arabic')}
                 </p>
                 <p>
                   <strong>English Language Level:</strong>{' '}
-                  {homemaid.EnglishLanguageLevel || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'english')}
                 </p>
                 <p>
                   <strong>Laundry Level:</strong>{' '}
-                  {homemaid.LaundryLeveL || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'laundry')}
+                </p>
+                <p>
+                  <strong>Washing Level:</strong>{' '}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'washing')}
                 </p>
                 <p>
                   <strong>Ironing Level:</strong>{' '}
-                  {homemaid.IroningLevel || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'ironing')}
                 </p>
               </div>
               <div>
                 <p>
                   <strong>Cleaning Level:</strong>{' '}
-                  {homemaid.CleaningLeveL || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'cleaning')}
                 </p>
                 <p>
                   <strong>Cooking Level:</strong>{' '}
-                  {homemaid.CookingLeveL || 'N/A'}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'cooking')}
                 </p>
                 <p>
-                  <strong>Babysitting Level:</strong>{' '}
-                  {homemaid.BabySitterLevel || 'N/A'}
+                  <strong>Childcare / Babysitting:</strong>{' '}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'childcare')}
                 </p>
                 <p>
-                  <strong>Sewing Level:</strong> {homemaid.SewingLeveL || 'N/A'}
+                  <strong>Sewing Level:</strong>{' '}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'sewing')}
+                </p>
+                <p>
+                  <strong>Elderly Care Level:</strong>{' '}
+                  {homemaidLevel(homemaid as unknown as Record<string, unknown>, 'elderly')}
                 </p>
               </div>
             </div>
-            <p className="mt-4">
-              <strong>Old People Care:</strong>{' '}
-              {homemaid.OldPeopleCare ? 'Yes' : 'No'}
-            </p>
           </motion.section>
 
           {/* Experience */}
@@ -288,7 +310,7 @@ const {language} = useLanguage()
             </p>
           </motion.section>
 
-          {/* Weekly Status */}
+          {/* Weekly Status — disabled */}
           {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
@@ -299,12 +321,11 @@ const {language} = useLanguage()
               Weekly Status
             </h2>
 
-
             {homemaid.weeklyStatusId?.length > 0 ? (
               <ul className="list-disc pl-5">
                 {homemaid.weeklyStatusId?.map((status) => (
                   <li key={status.id}>
-                    {status.status} - {new Date(status.date).toLocaleDateString()}
+                    {status.status} - {getDate(status.date) ?? 'N/A'}
                   </li>
                 ))}
               </ul>
@@ -313,7 +334,7 @@ const {language} = useLanguage()
             )}
           </motion.section> */}
 
-          {/* Housing Details */}
+          {/* Housing Details — disabled */}
           {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
@@ -327,8 +348,7 @@ const {language} = useLanguage()
               <ul className="list-disc pl-5">
                 {homemaid.inHouse?.map((housing) => (
                   <li key={housing.id}>
-                    Entry Date:{' '}
-                    {new Date(housing.houseentrydate).toLocaleDateString()}
+                    Entry Date: {getDate(housing.houseentrydate) ?? 'N/A'}
                     <ul className="ml-5">
                       {housing.checkIns.map((checkIn) => (
                         <li key={checkIn.id}>
@@ -344,7 +364,7 @@ const {language} = useLanguage()
             )}
           </motion.section> */}
 
-          {/* Orders */}
+          {/* Orders — disabled */}
           {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
@@ -365,7 +385,7 @@ const {language} = useLanguage()
             )}
           </motion.section> */}
 
-          {/* Sessions */}
+          {/* Sessions — disabled */}
           {/* <motion.section
             className="mb-8"
             initial={{ opacity: 0 }}
@@ -380,7 +400,7 @@ const {language} = useLanguage()
                 {homemaid.Session?.map((session) => (
                   <li key={session.id}>
                     Reason: {session.reason} - Date:{' '}
-                    {new Date(session.date).toLocaleDateString()}
+                    {getDate(session.date) ?? 'N/A'}
                   </li>
                 ))}
               </ul>

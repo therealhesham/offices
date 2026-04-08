@@ -57,7 +57,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         Client: true,
         Session: true,
         logs: true,
-        Housed: true,
         inHouse: {
           include: {
             checkIns: true,
@@ -138,18 +137,35 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       experienceType,
       PassportStart,
       PassportEnd,
-      OldPeopleCare,
       ArabicLanguageLeveL,
       EnglishLanguageLevel,
       Salary,
-      LaundryLeveL,
-      IroningLevel,
-      CleaningLeveL,
-      CookingLeveL,
-      SewingLeveL,
-      BabySitterLevel,
       Education,
     } = body;
+
+    const pickStr = (...keys: string[]): string | null | undefined => {
+      for (const k of keys) {
+        if (!(k in body)) continue;
+        const v = body[k];
+        if (v === null || v === '') return null;
+        if (v !== undefined) return String(v);
+      }
+      return undefined;
+    };
+
+    const laundry = pickStr('laundryLevel', 'LaundryLevel', 'LaundryLeveL');
+    const cleaning = pickStr('cleaningLevel', 'CleaningLevel', 'CleaningLeveL');
+    const cooking = pickStr('cookingLevel', 'CookingLevel', 'CookingLeveL');
+    const washing = pickStr('washingLevel', 'WashingLevel');
+    const sewing = pickStr('sewingLevel', 'SewingLevel', 'SewingLeveL');
+    const ironing = pickStr('ironingLevel', 'IroningLevel');
+    const childcare = pickStr(
+      'childcareLevel',
+      'ChildcareLevel',
+      'BabySitterLevel',
+      'babySitterLevel'
+    );
+    const elderly = pickStr('elderlycareLevel', 'ElderlycareLevel');
 
     // Update the homemaid record
     const updatedHomemaid = await prisma.homemaid.update({
@@ -176,17 +192,43 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         experienceType,
         PassportStart,
         PassportEnd,
-        OldPeopleCare,
         ArabicLanguageLeveL,
         EnglishLanguageLevel,
         Salary,
-        LaundryLeveL,
-        IroningLevel,
-        CleaningLeveL,
-        CookingLeveL,
-        SewingLeveL,
-        BabySitterLevel,
         Education,
+        ...(laundry !== undefined && {
+          LaundryLevel: laundry,
+          laundryLevel: laundry,
+        }),
+        ...(cleaning !== undefined && {
+          CleaningLevel: cleaning,
+          cleaningLevel: cleaning,
+        }),
+        ...(cooking !== undefined && {
+          CookingLevel: cooking,
+          cookingLevel: cooking,
+        }),
+        ...(washing !== undefined && {
+          WashingLevel: washing,
+          washingLevel: washing,
+        }),
+        ...(sewing !== undefined && {
+          SewingLevel: sewing,
+          sewingLevel: sewing,
+        }),
+        ...(ironing !== undefined && {
+          IroningLevel: ironing,
+          ironingLevel: ironing,
+        }),
+        ...(childcare !== undefined && {
+          ChildcareLevel: childcare,
+          childcareLevel: childcare,
+          BabySitterLevel: childcare,
+        }),
+        ...(elderly !== undefined && {
+          ElderlycareLevel: elderly,
+          elderlycareLevel: elderly,
+        }),
       },
       include: {
         office: true,
@@ -194,7 +236,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         Client: true,
         Session: true,
         logs: true,
-        Housed: true,
         inHouse: {
           include: {
             checkIns: true,

@@ -6,6 +6,13 @@ import PDFProcessor from '../components/PDFProcessor';
 import imageCompression from 'browser-image-compression';
 import AWS from 'aws-sdk';
 import { useLanguage } from '../contexts/LanguageContext';
+import {
+  skillLevels,
+  educationOptions,
+  maritalStatusOptions,
+  religionOptions,
+  selectOptionsWithCurrent,
+} from '@/app/lib/homemaidFormOptions';
 
 // Translation dictionary
 const translations = {
@@ -14,6 +21,7 @@ const translations = {
     completionPercentage: 'Completion Percentage',
     completed: 'Completed',
     successMessage: 'Profile created successfully!',
+    selectPlaceholder: 'Select…',
     submitButton: 'Create Profile',
     processing: 'Processing...',
     uploadPDFButton: 'Upload CV Automatically',
@@ -131,6 +139,7 @@ const translations = {
     completionPercentage: 'Pourcentage d’achèvement',
     completed: 'Complété',
     successMessage: 'Profil créé avec succès !',
+    selectPlaceholder: 'Choisir…',
     submitButton: 'Créer le profil',
     processing: 'Traitement en cours...',
     uploadPDFButton: 'Télécharger CV Automatiquement',
@@ -223,6 +232,7 @@ const translations = {
     completionPercentage: 'نسبة الإكمال',
     completed: 'مكتمل',
     successMessage: 'تم إنشاء الملف الشخصي بنجاح!',
+    selectPlaceholder: 'اختر…',
     submitButton: 'إضافة عاملة',
     processing: 'جاري المعالجة...',
     uploadPDFButton: 'رفع سيرة ذاتية تلقائياً',
@@ -323,6 +333,7 @@ const translations = {
     completionPercentage: 'مکمل ہونے کا فیصد',
     completed: 'مکمل',
     successMessage: 'پروفائل کامیابی سے بنایا گیا!',
+    selectPlaceholder: 'منتخب کریں…',
     submitButton: 'پروفائل بنائیں',
     processing: 'پروسیسنگ جاری ہے...',
     uploadPDFButton: 'CV خودکار اپ لوڈ کریں',
@@ -847,7 +858,7 @@ const FormPage = () => {
               </div>
             </div>
             {/* Tab System for Method Selection */}
-            <div className="mb-8">
+            {/* <div className="mb-8">
               <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
                 <button
                   onClick={() => {
@@ -886,7 +897,7 @@ const FormPage = () => {
                   </div>
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Method Indicator - Only show when using automatic method and have extracted data */}
             {inputMethod === 'automatic' && formData.Name && (
@@ -1080,12 +1091,27 @@ const FormPage = () => {
                   {[
                     { name: 'Name', type: 'text', required: true, tooltip: t.tooltips.Name },
                     { name: 'nationality', type: 'text', required: true, tooltip: t.tooltips.nationality },
-                    { name: 'Religion', type: 'text', tooltip: t.tooltips.Religion },
+                    {
+                      name: 'Religion',
+                      fieldType: 'select',
+                      options: religionOptions,
+                      tooltip: t.tooltips.Religion,
+                    },
                     { name: 'phone', type: 'text', required: true, tooltip: t.tooltips.phone },
                     { name: 'email', type: 'email', required: true, tooltip: t.tooltips.email },
                     { name: 'dateOfbirth', type: 'date', required: true, tooltip: t.tooltips.dateOfbirth },
-                    { name: 'maritalStatus', type: 'text', tooltip: t.tooltips.maritalStatus },
-                    { name: 'education', type: 'text', tooltip: t.tooltips.education },
+                    {
+                      name: 'maritalStatus',
+                      fieldType: 'select',
+                      options: maritalStatusOptions,
+                      tooltip: t.tooltips.maritalStatus,
+                    },
+                    {
+                      name: 'education',
+                      fieldType: 'select',
+                      options: educationOptions,
+                      tooltip: t.tooltips.education,
+                    },
                     // Additional fields
                     { name: 'age', type: 'text', required: true, tooltip: 'العمر' },
                     { name: 'birthPlace', type: 'text', required: true, tooltip: 'مكان الميلاد' },
@@ -1095,28 +1121,55 @@ const FormPage = () => {
                     { name: 'childrenCount', type: 'text', tooltip: 'عدد الأطفال' },
                     { name: 'weight', type: 'text', required: true, tooltip: 'الوزن' },
                     { name: 'height', type: 'text', required: true, tooltip: 'الطول' },
-                  ].map((field, index) => (
+                  ].map((field, index) => {
+                    const isSelect = (field as any).fieldType === 'select';
+                    const selectOpts = (field as any).options as readonly string[] | undefined;
+                    const rawVal = String((formData as any)[field.name] ?? '');
+                    const opts = isSelect && selectOpts
+                      ? selectOptionsWithCurrent(rawVal, selectOpts)
+                      : [];
+                    return (
                     <div key={field.name} className="relative group" style={{ animationDelay: `${index * 100}ms` }}>
                       <div className="relative">
-                        <input
-                          type={field.type}
-                          name={field.name}
-                          value={(formData as any)[field.name]}
-                          onChange={handleChange}
-                          className={`peer w-full p-3 pt-5 bg-white border ${
-                            errors[field.name] ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent`}
-                          placeholder={(t.fields as any)[field.name]}
-                          aria-invalid={errors[field.name] ? 'true' : 'false'}
-                          id={field.name}
-                        />
+                        {isSelect && selectOpts ? (
+                          <select
+                            name={field.name}
+                            value={rawVal}
+                            onChange={handleChange}
+                            className={`peer w-full p-3 pt-5 bg-white border ${
+                              errors[field.name] ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800`}
+                            aria-invalid={errors[field.name] ? 'true' : 'false'}
+                            id={field.name}
+                          >
+                            <option value="">{(t as any).selectPlaceholder}</option>
+                            {opts.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={(field as any).type}
+                            name={field.name}
+                            value={(formData as any)[field.name]}
+                            onChange={handleChange}
+                            className={`peer w-full p-3 pt-5 bg-white border ${
+                              errors[field.name] ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent`}
+                            placeholder={(t.fields as any)[field.name]}
+                            aria-invalid={errors[field.name] ? 'true' : 'false'}
+                            id={field.name}
+                          />
+                        )}
                         <label
                           htmlFor={field.name}
                           className={`absolute left-3 top-1 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600 ${
                             (formData as any)[field.name] ? 'top-1 text-xs text-gray-600' : ''
                           }`}
                         >
-                          {(t.fields as any)[field.name]} {field.required && <span className="text-red-500">*</span>}
+                          {(t.fields as any)[field.name]} {(field as any).required && <span className="text-red-500">*</span>}
                         </label>
                       </div>
                       {errors[field.name] && (
@@ -1128,7 +1181,8 @@ const FormPage = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1223,38 +1277,42 @@ const FormPage = () => {
                     { name: 'skills.cooking', tooltip: t.tooltips.skills },
                     { name: 'skills.sewing', tooltip: t.tooltips.skills },
                     { name: 'skills.babySitting', tooltip: t.tooltips.skills },
-                  ].map((field, index) => (
+                  ].map((field, index) => {
+                    const rawVal =
+                      field.name.includes('languageSkills')
+                        ? (formData.languageSkills as any)[field.name.split('.')[1]]
+                        : (formData.skills as any)[field.name.split('.')[1]];
+                    const rawStr = String(rawVal ?? '');
+                    const skillOpts = selectOptionsWithCurrent(rawStr, skillLevels);
+                    const labelText = field.name.includes('languageSkills')
+                      ? (t.fields as any).languageSkills?.[field.name.split('.')[1]] ??
+                        (t.fields as any)[field.name]
+                      : (t.fields as any).skills?.[field.name.split('.')[1]] ??
+                        (t.fields as any)[field.name];
+                    return (
                     <div key={field.name} className="relative group" style={{ animationDelay: `${index * 100}ms` }}>
                       <div className="relative">
-                        <input
-                          type="text"
+                        <select
                           name={field.name}
-                          value={
-                            field.name.includes('languageSkills')
-                              ? (formData.languageSkills as any)[field.name.split('.')[1]]
-                              : (formData.skills as any)[field.name.split('.')[1]]
-                          }
+                          value={rawStr}
                           onChange={handleChange}
-                          className="peer w-full p-3 pt-5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
-                          placeholder={
-                            field.name.includes('languageSkills')
-                              ? (t.fields.languageSkills as any)[field.name.split('.')[1]]
-                              : (t.fields.skills as any)[field.name.split('.')[1]]
-                          }
+                          className="peer w-full p-3 pt-5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800"
                           id={field.name}
-                        />
+                        >
+                          <option value="">{(t as any).selectPlaceholder}</option>
+                          {skillOpts.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
                         <label
                           htmlFor={field.name}
                           className={`absolute left-3 top-1 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600 ${
-                            (field.name.includes('languageSkills') && (formData.languageSkills as any)[field.name.split('.')[1]]) ||
-                            (field.name.includes('skills') && (formData.skills as any)[field.name.split('.')[1]])
-                              ? 'top-1 text-xs text-gray-600'
-                              : ''
+                            rawStr ? 'top-1 text-xs text-gray-600' : ''
                           }`}
                         >
-                          {field.name.includes('languageSkills')
-                            ? (t.fields.languageSkills as any)[field.name.split('.')[1]]
-                            : (t.fields.skills as any)[field.name.split('.')[1]]}
+                          {labelText}
                         </label>
                       </div>
                       {field.tooltip && (
@@ -1263,7 +1321,8 @@ const FormPage = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
