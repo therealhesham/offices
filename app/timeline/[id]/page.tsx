@@ -235,6 +235,10 @@ function getCustomStageEntry(arrival: ArrivalTimeline | null, field: string) {
 }
 
 function isCustomStageComplete(stage: TimelineStage, ctx: TimelineCtx, arrival: ArrivalTimeline | null): boolean {
+  /** الفحص الطبي: أعمدة السجل فقط، لا ملف/سؤال من JSON */
+  if (stage.field === 'medicalCheck') {
+    return isStepCompleted('medicalCheck', ctx);
+  }
   const entry = getCustomStageEntry(arrival, stage.field);
   if (entry?.completed === true) return true;
   const it = stage.interactionType ?? 'none';
@@ -327,6 +331,11 @@ const STEP_LABELS: Record<
 type StageDetailsOptions = {
   /** معاينة عند الضغط بدل فتح تبويب جديد (يُستخدم لملف الفحص الطبي) */
   onPreviewFile?: (url: string) => void;
+  /** عناوين صفوف تفاصيل الفحص الطبي */
+  medicalLabels?: {
+    dateLabel: string;
+    medicalFile: string;
+  };
 };
 
 function getStageDetails(
@@ -388,11 +397,14 @@ function getStageDetails(
         'External Office File': link(arrival.externalOfficeFile),
       };
     case 'medicalCheck': {
-      const customMedicalFile = getCustomStageEntry(arrival, 'medicalCheck')?.fileUrl?.trim();
-      const medicalFileUrl = customMedicalFile || arrival.medicalCheckFile || null;
+      const dbFile = arrival.medicalCheckFile?.trim() || null;
+      const L = options?.medicalLabels;
+      const dateKey = L?.dateLabel ?? 'Medical check date';
+      const fileKey = L?.medicalFile ?? 'Medical file';
+
       return {
-        'Medical Check Date': arrival.medicalCheckDate?.toString() || 'N/A',
-        'Medical Check File': previewableFile(medicalFileUrl),
+        [dateKey]: arrival.medicalCheckDate?.toString() || 'N/A',
+        [fileKey]: previewableFile(dbFile),
       };
     }
     case 'foreignLaborApproval':
@@ -469,6 +481,8 @@ const ui = {
     previewNoEmbed: 'This file type cannot be shown here.',
     openInNewTab: 'Open in new tab',
     removeFileAria: 'Remove uploaded file',
+    medicalDetailDate: 'Medical check date',
+    medicalDetailFile: 'Medical file',
   },
   ar: {
     title: 'الجدول الزمني للطلب: {name}',
@@ -502,6 +516,8 @@ const ui = {
     previewNoEmbed: 'لا يمكن عرض هذا النوع من الملفات هنا.',
     openInNewTab: 'فتح في تبويب جديد',
     removeFileAria: 'إزالة الملف المرفوع',
+    medicalDetailDate: 'تاريخ الفحص الطبي',
+    medicalDetailFile: 'ملف الفحص الطبي',
   },
   fra: {
     title: 'Chronologie: {name}',
@@ -535,6 +551,11 @@ const ui = {
     previewNoEmbed: 'Ce type de fichier ne peut pas être affiché ici.',
     openInNewTab: 'Ouvrir dans un nouvel onglet',
     removeFileAria: 'Retirer le fichier',
+    medicalDetailDate: 'Date de l’examen médical',
+    medicalDetailFile: 'Fichier médical',
+    medicalDetailFile1: 'Fichier médical 1',
+    medicalDetailFile2: 'Fichier médical 2',
+    medicalDetailStageAnswer: 'Réponse',
   },
   ur: {
     title: 'ٹائم لائن: {name}',
@@ -568,6 +589,8 @@ const ui = {
     previewNoEmbed: 'یہ فائل یہاں نہیں دکھائی جا سکتی۔',
     openInNewTab: 'نئی ٹیب میں کھولیں',
     removeFileAria: 'فائل ہٹائیں',
+    medicalDetailDate: 'طبی معائنہ کی تاریخ',
+    medicalDetailFile: 'طبی فائل',
   },
 };
 
@@ -1089,15 +1112,19 @@ export default function TimelinePage() {
                 !stepHasInfo &&
                 index === firstIncomplete &&
                 firstIncomplete < stepRows.length;
+              const medicalDetailOpts = {
+                onPreviewFile: openFilePreview,
+                medicalLabels: {
+                  dateLabel: t.medicalDetailDate,
+                  medicalFile: t.medicalDetailFile,
+                },
+              } as const;
+
               const stageDetails =
                 row.mode === 'custom' && isTrackOrderStep(row.stage.field)
-                  ? getStageDetails(row.stage.field, arrival, t.viewFile, {
-                      onPreviewFile: openFilePreview,
-                    })
+                  ? getStageDetails(row.stage.field, arrival, t.viewFile, medicalDetailOpts)
                   : row.mode === 'default'
-                    ? getStageDetails(row.key, arrival, t.viewFile, {
-                        onPreviewFile: openFilePreview,
-                      })
+                    ? getStageDetails(row.key, arrival, t.viewFile, medicalDetailOpts)
                     : null;
               const isExpanded = expandedField === field;
               const stageInteraction =
@@ -1107,34 +1134,28 @@ export default function TimelinePage() {
               const allowCustomInteraction =
                 row.mode === 'custom' && sortedCustomStages.length > 0;
 
-              const showLegacyMedicalUpload =
-                field === 'medicalCheck' &&
-                !(row.mode === 'custom' && (stageInteraction === 'question' || stageInteraction === 'file'));
+              /** تاريخ + ملف الفحص من أعمدة السجل (دائماً لمرحلة medicalCheck) */
+              const showMedicalDbSection = field === 'medicalCheck';
 
               const showQuestionUI =
+                field !== 'medicalCheck' &&
                 row.mode === 'custom' &&
                 stageInteraction === 'question' &&
                 Boolean(row.stage.questionText) &&
                 (row.stage.answerOptions?.length ?? 0) >= 2;
 
-              const showCustomFileUI = row.mode === 'custom' && stageInteraction === 'file';
+              const showCustomFileUI =
+                field !== 'medicalCheck' &&
+                row.mode === 'custom' &&
+                stageInteraction === 'file';
 
               const savedAnswer = getCustomStageEntry(arrival, field)?.answer;
               const savedFileUrl = getCustomStageEntry(arrival, field)?.fileUrl;
 
-              const allowMedicalDateEdit = showLegacyMedicalUpload;
+              const showMedicalDatePicker = field === 'medicalCheck';
 
-              const showMedicalDatePicker =
-                field === 'medicalCheck' &&
-                (allowMedicalDateEdit ||
-                  (row.mode === 'custom' && allowCustomInteraction));
-
-              const legacyMedicalFileUrl =
-                (arrival?.medicalCheckFile?.trim() ||
-                  (field === 'medicalCheck'
-                    ? getCustomStageEntry(arrival, 'medicalCheck')?.fileUrl?.trim()
-                    : '') ||
-                  '') || null;
+              /** ملف الفحص في عمود قاعدة البيانات فقط (منفصل عن ملف المرحلة المخصصة) */
+              const dbMedicalFileUrl = arrival?.medicalCheckFile?.trim() || null;
 
               return (
                 <motion.div
@@ -1215,6 +1236,79 @@ export default function TimelinePage() {
                                   </button>
                                 </div>
                                 <p className="text-xs text-gray-500">{t.medicalCheckDateHint}</p>
+                              </div>
+                            )}
+
+                            {showMedicalDbSection && (
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {dbMedicalFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.medicalFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(dbMedicalFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'medical'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeLegacyMedicalFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
+                                  </p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {dbMedicalFileUrl ? t.replaceMedicalFileLabel : t.uploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {file && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFileUpload();
+                                    }}
+                                    disabled={uploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {uploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
+                                )}
+                                {uploadStatus === 'success' && uploadedFileUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {uploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
                               </div>
                             )}
 
@@ -1365,79 +1459,6 @@ export default function TimelinePage() {
                                     )}
                                   </>
                                 )}
-                              </div>
-                            )}
-
-                            {showLegacyMedicalUpload && (
-                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
-                                {legacyMedicalFileUrl ? (
-                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
-                                    <span>{t.medicalFileUploaded}</span>
-                                    <button
-                                      type="button"
-                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openFilePreview(legacyMedicalFileUrl);
-                                      }}
-                                    >
-                                      {t.viewFile}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={BTN_REMOVE_UPLOADED_FILE}
-                                      aria-label={t.removeFileAria}
-                                      disabled={removingFile === 'medical'}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeLegacyMedicalFile();
-                                      }}
-                                    >
-                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
-                                    </button>
-                                  </p>
-                                ) : null}
-                                <label className="block text-sm font-bold text-indigo-950">
-                                  {legacyMedicalFileUrl ? t.replaceMedicalFileLabel : t.uploadLabel}
-                                </label>
-                                <input
-                                  type="file"
-                                  accept=".pdf,.doc,.docx,.jpg,.png"
-                                  onChange={handleFileChange}
-                                  className={INPUT_FILE_PROMINENT}
-                                />
-                                {file && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFileUpload();
-                                    }}
-                                    disabled={uploadStatus === 'uploading'}
-                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
-                                  >
-                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
-                                    {uploadStatus === 'uploading' ? t.uploading : t.uploadButton}
-                                  </button>
-                                )}
-                                {uploadStatus === 'success' && uploadedFileUrl && (
-                                  <p className="mt-2 text-green-600">
-                                    {t.uploadSuccess}
-                                    <button
-                                      type="button"
-                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openFilePreview(uploadedFileUrl);
-                                      }}
-                                    >
-                                      {t.viewFile}
-                                    </button>
-                                  </p>
-                                )}
-                                {uploadStatus === 'error' && !saveErrorDetail ? (
-                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
-                                ) : null}
                               </div>
                             )}
                           </motion.div>

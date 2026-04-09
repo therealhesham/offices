@@ -71,6 +71,15 @@ export async function PATCH(request: Request, { params }: Params) {
       if (!field) {
         return NextResponse.json({ error: 'patchCustomTimelineStage.field required' }, { status: 400 });
       }
+      if (field === 'medicalCheck') {
+        return NextResponse.json(
+          {
+            error:
+              'Medical check uses medicalCheckDate and medicalCheckFile columns only; custom stage JSON is not used for medical check.',
+          },
+          { status: 400 }
+        );
+      }
 
       const prev = normalizeCustomStagesPrev(arrival.customTimelineStages);
       const prevField = { ...(prev[field] ?? {}) };
