@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { normalizeCustomStagesPrev } from '@/app/lib/customTimelineStagesJson';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const orderId = parseInt(params.id);
+type Params = { params: Promise<{ id: string }> };
 
-    // Fetch neworder
+export async function GET(request: Request, { params }: Params) {
+  try {
+    const { id: idStr } = await params;
+    const orderId = parseInt(idStr, 10);
+    if (Number.isNaN(orderId)) {
+      return NextResponse.json({ error: 'Invalid order id' }, { status: 400 });
+    }
+
     const order = await prisma.neworder.findUnique({
       where: { id: orderId },
       include: {
@@ -19,7 +25,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Fetch related arrivallist
     const arrival = order.arrivals.length > 0 ? order.arrivals[0] : null;
 
     return NextResponse.json({ order, arrival });
@@ -31,19 +36,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: Params) {
   try {
-    const orderId = parseInt(params.id, 10);
+    const { id: idStr } = await params;
+    const orderId = parseInt(idStr, 10);
     if (Number.isNaN(orderId)) {
       return NextResponse.json({ error: 'Invalid order id' }, { status: 400 });
     }
 
     const body = await request.json();
-    const medicalCheckFile =
-      typeof body.medicalCheckFile === 'string' ? body.medicalCheckFile : undefined;
-    if (!medicalCheckFile) {
-      return NextResponse.json({ error: 'medicalCheckFile required' }, { status: 400 });
-    }
 
     const order = await prisma.neworder.findUnique({
       where: { id: orderId },
@@ -59,15 +60,66 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: 'Arrival record not found' }, { status: 404 });
     }
 
-    const updated = await prisma.arrivallist.update({
-      where: { id: arrival.id },
-      data: {
-        medicalCheckFile,
-        medicalCheckDate: new Date(),
-      },
-    });
+    /** تحديث مرحلة مخصصة في JSON (سؤال / ملف) */
+    if (body.patchCustomTimelineStage && typeof body.patchCustomTimelineStage === 'object') {
+      const patch = body.patchCustomTimelineStage as {
+        field?: string;
+        answer?: string;
+        fileUrl?: string;
+      };
+      const field = typeof patch.field === 'string' ? patch.field.trim() : '';
+      if (!field) {
+        return NextResponse.json({ error: 'patchCustomTimelineStage.field required' }, { status: 400 });
+      }
 
-    return NextResponse.json({ arrival: updated });
+      const prev = normalizeCustomStagesPrev(arrival.customTimelineStages);
+      const prevField = { ...(prev[field] ?? {}) };
+      const now = new Date().toISOString();
+
+      if (patch.answer !== undefined) {
+        const ans = String(patch.answer).trim();
+        prevField.answer = ans;
+        prevField.completed = ans.length > 0;
+        prevField.date = now;
+      }
+
+      if (patch.fileUrl !== undefined && typeof patch.fileUrl === 'string' && patch.fileUrl.trim()) {
+        prevField.fileUrl = patch.fileUrl.trim();
+        prevField.completed = true;
+        prevField.date = now;
+      }
+
+      const merged: Record<string, Record<string, unknown>> = {
+        ...prev,
+        [field]: prevField,
+      };
+
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { customTimelineStages: merged as Prisma.InputJsonValue },
+      });
+
+      return NextResponse.json({ arrival: updated });
+    }
+
+    const medicalCheckFile =
+      typeof body.medicalCheckFile === 'string' ? body.medicalCheckFile : undefined;
+    if (medicalCheckFile) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: {
+          medicalCheckFile,
+          medicalCheckDate: new Date(),
+        },
+      });
+
+      return NextResponse.json({ arrival: updated });
+    }
+
+    return NextResponse.json(
+      { error: 'Provide medicalCheckFile or patchCustomTimelineStage' },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('Error updating arrival:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

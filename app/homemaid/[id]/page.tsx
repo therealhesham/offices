@@ -118,6 +118,11 @@ const {language} = useLanguage()
     );
   }
 
+  const profileSrc =
+    image?.includes('airtable')
+      ? image
+      : homemaid.Picture?.url || image || '';
+
   return (
        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
          <div className={`flex flex-row`}>
@@ -134,9 +139,9 @@ const {language} = useLanguage()
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              {image ? (
+              {profileSrc ? (
                 <Image
-                  src={image?.includes("airtable") ? image : homemaid.Picture?.url || ""}
+                  src={profileSrc}
                   alt="Profile"
                   width={120}
                   height={120}

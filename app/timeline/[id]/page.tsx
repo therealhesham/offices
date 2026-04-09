@@ -13,6 +13,10 @@ import {
 import AWS from 'aws-sdk';
 import Sidebar from '@/app/components/Sidebar';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { isStageVisibleOnExternalOffice, type TimelineStage } from '@/app/lib/timelineStage';
+import { fetchCustomTimelineForOffice } from '@/app/lib/officeCustomTimeline';
+import { getSpacesPublicObjectUrl } from '@/app/lib/spacesPublicUrl';
+import { normalizeCustomStagesPrev } from '@/app/lib/customTimelineStagesJson';
 
 // ——— نفس ترتيب ومنطق pages/admin/track_order/[id].tsx ———
 export const TRACK_ORDER_STEPS = [
@@ -61,6 +65,11 @@ export interface ArrivalTimeline {
   ticketFile?: string | null;
   visaNumber?: string | null;
   receivingFile?: string | null;
+  /** مراحل مخصصة: سؤال (answer) أو ملف (fileUrl) */
+  customTimelineStages?: Record<
+    string,
+    { completed?: boolean; date?: string; answer?: string; fileUrl?: string }
+  > | null;
 }
 
 export interface OrderForTimeline {
@@ -179,6 +188,64 @@ function canCompleteStep(
     if (!isStepCompleted(TRACK_ORDER_STEPS[i], ctx)) return false;
   }
   if (step === 'receipt' && !isArrivalDatePassed(ctx.arrival)) return false;
+  return true;
+}
+
+type TimelineCtx = {
+  arrival: ArrivalTimeline | null;
+  visaNumber?: string | null;
+  homemaidOfficeName?: string | null;
+};
+
+function isTrackOrderStep(s: string): s is TrackOrderStep {
+  return (TRACK_ORDER_STEPS as readonly string[]).includes(s);
+}
+
+function getCustomStageEntry(arrival: ArrivalTimeline | null, field: string) {
+  const stages = normalizeCustomStagesPrev(arrival?.customTimelineStages ?? null);
+  return stages[field] as
+    | { completed?: boolean; date?: string; answer?: string; fileUrl?: string }
+    | undefined;
+}
+
+function isCustomStageComplete(stage: TimelineStage, ctx: TimelineCtx, arrival: ArrivalTimeline | null): boolean {
+  const entry = getCustomStageEntry(arrival, stage.field);
+  if (entry?.completed === true) return true;
+  const it = stage.interactionType ?? 'none';
+  if (it === 'question') {
+    return !!(entry?.answer && String(entry.answer).trim());
+  }
+  if (it === 'file') {
+    return !!(entry?.fileUrl && String(entry.fileUrl).trim());
+  }
+  if (isTrackOrderStep(stage.field)) {
+    return isStepCompleted(stage.field, ctx);
+  }
+  return false;
+}
+
+function getFirstIncompleteCustomIndex(
+  sortedStages: TimelineStage[],
+  ctx: TimelineCtx,
+  arrival: ArrivalTimeline | null
+): number {
+  for (let i = 0; i < sortedStages.length; i++) {
+    if (!isCustomStageComplete(sortedStages[i], ctx, arrival)) return i;
+  }
+  return sortedStages.length;
+}
+
+function canCompleteCustomMedical(
+  sortedStages: TimelineStage[],
+  currentIndex: number,
+  ctx: TimelineCtx,
+  arrival: ArrivalTimeline | null
+): boolean {
+  if (currentIndex <= 0) return true;
+  for (let i = 0; i < currentIndex; i++) {
+    if (!isCustomStageComplete(sortedStages[i], ctx, arrival)) return false;
+  }
+  if (sortedStages[currentIndex]?.field === 'receipt' && !isArrivalDatePassed(arrival)) return false;
   return true;
 }
 
@@ -341,10 +408,18 @@ const ui = {
     uploading: 'Uploading...',
     uploadSuccess: 'Uploaded successfully. ',
     uploadError: 'Upload failed.',
+    uploadOkDbFailed: 'File uploaded to storage, but the database did not save.',
     viewFile: 'View file',
     medicalFileUploaded: 'Medical file already uploaded. ',
     medicalFileRestricted: 'Upload is only allowed for the current stage when previous steps are done.',
     orderNotFound: 'Order not found',
+    saveAnswer: 'Save answer',
+    savingAnswer: 'Saving...',
+    answerSaved: 'Answer saved.',
+    answerError: 'Could not save answer.',
+    customFileLabel: 'Upload file',
+    customFileSaved: 'File uploaded.',
+    selectOption: 'Choose an option',
   },
   ar: {
     title: 'الجدول الزمني للطلب: {name}',
@@ -358,10 +433,18 @@ const ui = {
     uploading: 'جارٍ الرفع...',
     uploadSuccess: 'تم الرفع بنجاح. ',
     uploadError: 'فشل الرفع.',
+    uploadOkDbFailed: 'تم رفع الملف للتخزين لكن لم يُحفظ في قاعدة البيانات.',
     viewFile: 'عرض الملف',
     medicalFileUploaded: 'تم رفع الملف مسبقاً. ',
     medicalFileRestricted: 'الرفع متاح للمرحلة الحالية بعد إكمال المراحل السابقة.',
     orderNotFound: 'الطلب غير موجود',
+    saveAnswer: 'حفظ الإجابة',
+    savingAnswer: 'جارٍ الحفظ...',
+    answerSaved: 'تم حفظ الإجابة.',
+    answerError: 'تعذر حفظ الإجابة.',
+    customFileLabel: 'رفع ملف للمرحلة',
+    customFileSaved: 'تم رفع الملف.',
+    selectOption: 'اختر خياراً',
   },
   fra: {
     title: 'Chronologie: {name}',
@@ -375,10 +458,18 @@ const ui = {
     uploading: 'Envoi...',
     uploadSuccess: 'Envoyé. ',
     uploadError: 'Échec.',
+    uploadOkDbFailed: 'Fichier envoyé au stockage, mais pas enregistré en base.',
     viewFile: 'Voir',
     medicalFileUploaded: 'Fichier déjà envoyé. ',
     medicalFileRestricted: 'Envoi réservé à l’étape en cours.',
     orderNotFound: 'Commande introuvable',
+    saveAnswer: 'Enregistrer la réponse',
+    savingAnswer: 'Enregistrement...',
+    answerSaved: 'Réponse enregistrée.',
+    answerError: 'Échec de l’enregistrement.',
+    customFileLabel: 'Télécharger un fichier',
+    customFileSaved: 'Fichier envoyé.',
+    selectOption: 'Choisir une option',
   },
   ur: {
     title: 'ٹائم لائن: {name}',
@@ -392,10 +483,18 @@ const ui = {
     uploading: 'اپ لوڈ...',
     uploadSuccess: 'کامیاب۔ ',
     uploadError: 'ناکام۔',
+    uploadOkDbFailed: 'فائل اپ لوڈ ہو گئی مگر ڈیٹا بیس میں نہیں۔',
     viewFile: 'دیکھیں',
     medicalFileUploaded: 'پہلے سے موجود۔ ',
     medicalFileRestricted: 'موجودہ مرحلے کے لیے۔',
     orderNotFound: 'نہیں ملا',
+    saveAnswer: 'جواب محفوظ کریں',
+    savingAnswer: 'محفوظ ہو رہا ہے...',
+    answerSaved: 'جواب محفوظ ہو گیا۔',
+    answerError: 'محفوظ نہیں ہو سکا۔',
+    customFileLabel: 'فائل اپ لوڈ',
+    customFileSaved: 'فائل اپ لوڈ ہو گئی۔',
+    selectOption: 'منتخب کریں',
   },
 };
 
@@ -412,6 +511,7 @@ const s3 =
         accessKeyId: process.env.NEXT_PUBLIC_DO_SPACES_KEY,
         secretAccessKey: process.env.NEXT_PUBLIC_DO_SPACES_SECRET,
         endpoint: process.env.NEXT_PUBLIC_DO_SPACES_ENDPOINT,
+        region: process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1',
         s3ForcePathStyle: true,
         signatureVersion: 'v4',
       })
@@ -419,15 +519,23 @@ const s3 =
 
 export default function TimelinePage() {
   const { id } = useParams();
+  const orderIdParam = Array.isArray(id) ? id[0] : id;
   const { language } = useLanguage();
 
   const [order, setOrder] = useState<OrderForTimeline | null>(null);
   const [arrival, setArrival] = useState<ArrivalTimeline | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedStage, setExpandedStage] = useState<TrackOrderStep | null>(null);
+  const [expandedField, setExpandedField] = useState<string | null>(null);
+  const [officeCustomStages, setOfficeCustomStages] = useState<TimelineStage[] | null>(null);
+  const [useOfficeCustomTimeline, setUseOfficeCustomTimeline] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [saveErrorDetail, setSaveErrorDetail] = useState<string | null>(null);
+  const [answerDraft, setAnswerDraft] = useState<Record<string, string>>({});
+  const [savingQuestionField, setSavingQuestionField] = useState<string | null>(null);
+  const [uploadingCustomField, setUploadingCustomField] = useState<string | null>(null);
+  const [customFilePick, setCustomFilePick] = useState<Record<string, File | null>>({});
 
   let lang: AppLanguage = isAppLanguage(language) ? language : 'en';
   if (typeof window !== 'undefined' && !isAppLanguage(language)) {
@@ -447,21 +555,96 @@ export default function TimelinePage() {
     [arrival, order]
   );
 
-  const firstIncomplete = useMemo(() => getFirstIncompleteIndex(timelineCtx), [timelineCtx]);
-  const completedCount = useMemo(
-    () => TRACK_ORDER_STEPS.filter((s) => isStepCompleted(s, timelineCtx)).length,
-    [timelineCtx]
+  /** مراحل التايم لاين المخصص الظاهرة فقط لواجهة المكتب الخارجي (`visibleOnExternalOffice !== false`) */
+  const sortedCustomStages = useMemo(() => {
+    if (!officeCustomStages?.length) return [];
+    return [...officeCustomStages]
+      .filter(isStageVisibleOnExternalOffice)
+      .sort((a, b) => a.order - b.order);
+  }, [officeCustomStages]);
+
+  const allCustomStagesHiddenForExternal = useMemo(
+    () =>
+      useOfficeCustomTimeline &&
+      (officeCustomStages?.length ?? 0) > 0 &&
+      sortedCustomStages.length === 0,
+    [useOfficeCustomTimeline, officeCustomStages, sortedCustomStages]
   );
-  const progressPercentage = (completedCount / TRACK_ORDER_STEPS.length) * 100;
+
+  const firstIncomplete = useMemo(() => {
+    if (allCustomStagesHiddenForExternal) return 0;
+    if (useOfficeCustomTimeline && sortedCustomStages.length > 0) {
+      return getFirstIncompleteCustomIndex(sortedCustomStages, timelineCtx, arrival);
+    }
+    return getFirstIncompleteIndex(timelineCtx);
+  }, [
+    allCustomStagesHiddenForExternal,
+    useOfficeCustomTimeline,
+    sortedCustomStages,
+    timelineCtx,
+    arrival,
+  ]);
+
+  const completedCount = useMemo(() => {
+    if (allCustomStagesHiddenForExternal) return 0;
+    if (useOfficeCustomTimeline && sortedCustomStages.length > 0) {
+      return sortedCustomStages.filter((s) =>
+        isCustomStageComplete(s, timelineCtx, arrival)
+      ).length;
+    }
+    return TRACK_ORDER_STEPS.filter((s) => isStepCompleted(s, timelineCtx)).length;
+  }, [
+    allCustomStagesHiddenForExternal,
+    useOfficeCustomTimeline,
+    sortedCustomStages,
+    timelineCtx,
+    arrival,
+  ]);
+
+  const totalStepCount = useMemo(() => {
+    if (allCustomStagesHiddenForExternal) return 1;
+    if (useOfficeCustomTimeline && sortedCustomStages.length > 0) {
+      return sortedCustomStages.length;
+    }
+    return TRACK_ORDER_STEPS.length;
+  }, [allCustomStagesHiddenForExternal, useOfficeCustomTimeline, sortedCustomStages]);
+
+  const progressPercentage = (completedCount / totalStepCount) * 100;
+
+  const stepRows = useMemo(() => {
+    if (allCustomStagesHiddenForExternal) return [];
+    if (useOfficeCustomTimeline && sortedCustomStages.length > 0) {
+      return sortedCustomStages.map((stage) => ({ mode: 'custom' as const, stage }));
+    }
+    return TRACK_ORDER_STEPS.map((key) => ({ mode: 'default' as const, key }));
+  }, [allCustomStagesHiddenForExternal, useOfficeCustomTimeline, sortedCustomStages]);
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { stages } = await fetchCustomTimelineForOffice();
+      if (cancelled) return;
+      if (stages && stages.length > 0) {
+        setOfficeCustomStages(stages);
+        setUseOfficeCustomTimeline(true);
+      } else {
+        setOfficeCustomStages(null);
+        setUseOfficeCustomTimeline(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`/api/neworder/${id}`);
+        const response = await fetch(`/api/neworder/${orderIdParam}`);
         const data = await response.json();
         setOrder(data.order ?? data);
         setArrival(data.arrival ?? null);
@@ -471,21 +654,24 @@ export default function TimelinePage() {
         setLoading(false);
       }
     };
-    if (id) fetchOrder();
-  }, [id]);
+    if (orderIdParam) fetchOrder();
+  }, [orderIdParam]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
       setUploadStatus('idle');
+      setSaveErrorDetail(null);
     }
   };
 
   const handleFileUpload = async () => {
-    if (!file || !s3) return;
+    if (!file || !s3 || !orderIdParam) return;
     setUploadStatus('uploading');
-    const fileName = `medical-check/${id}/${Date.now()}_${file.name}`;
+    setSaveErrorDetail(null);
+    const fileName = `medical-check/${orderIdParam}/${Date.now()}_${file.name}`;
     const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
+    const region = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1';
 
     try {
       await s3
@@ -498,23 +684,84 @@ export default function TimelinePage() {
         })
         .promise();
 
-      const endpoint = process.env.NEXT_PUBLIC_DO_SPACES_ENDPOINT || '';
-      const fileUrl = `https://${bucket}.${endpoint}/${fileName}`;
-      setUploadedFileUrl(fileUrl);
-      setUploadStatus('success');
+      const fileUrl = getSpacesPublicObjectUrl(bucket, region, fileName);
 
-      const patchRes = await fetch(`/api/neworder/${id}`, {
+      const patchRes = await fetch(`/api/neworder/${orderIdParam}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ medicalCheckFile: fileUrl }),
       });
-      if (patchRes.ok) {
-        const patchData = await patchRes.json();
-        if (patchData.arrival) setArrival(patchData.arrival as ArrivalTimeline);
+      const patchBody = await patchRes.json().catch(() => ({}));
+
+      if (!patchRes.ok) {
+        const msg =
+          typeof patchBody.error === 'string' ? patchBody.error : patchRes.statusText || 'PATCH failed';
+        setSaveErrorDetail(msg);
+        setUploadStatus('error');
+        setUploadedFileUrl(fileUrl);
+        return;
       }
+
+      if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
+      setUploadedFileUrl(fileUrl);
+      setUploadStatus('success');
     } catch (err) {
       console.error(err);
       setUploadStatus('error');
+      setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const saveQuestionAnswer = async (field: string, answer: string) => {
+    if (!orderIdParam) return;
+    setSavingQuestionField(field);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patchCustomTimelineStage: { field, answer } }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+        setAnswerDraft((d) => {
+          const n = { ...d };
+          delete n[field];
+          return n;
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingQuestionField(null);
+    }
+  };
+
+  const uploadCustomStageFile = async (field: string, file: File) => {
+    if (!orderIdParam) return;
+    setUploadingCustomField(field);
+    setSaveErrorDetail(null);
+    try {
+      const fd = new FormData();
+      fd.append('field', field);
+      fd.append('file', file);
+      const res = await fetch(`/api/neworder/${orderIdParam}/custom-stage-upload`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        setCustomFilePick((m) => ({ ...m, [field]: null }));
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setCustomFilePick((m) => ({ ...m, [field]: null }));
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUploadingCustomField(null);
     }
   };
 
@@ -538,7 +785,7 @@ export default function TimelinePage() {
     );
   }
 
-  const clientName = order.ClientName || String(id);
+  const clientName = order.ClientName || String(orderIdParam ?? id);
 
   return (
     <div className="min-h-screen flex font-sans" dir={lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -566,29 +813,81 @@ export default function TimelinePage() {
             </div>
           </div>
 
+          {saveErrorDetail ? (
+            <div
+              role="alert"
+              className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
+              <strong className="font-semibold">{t.uploadOkDbFailed}</strong>
+              <span className="ms-1 opacity-90">({saveErrorDetail})</span>
+            </div>
+          ) : null}
+
           <div className="relative">
             <div
               className={`absolute ${lang === 'ur' || lang === 'ar' ? 'right-8' : 'left-8'} top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600`}
             />
 
-            {TRACK_ORDER_STEPS.map((stage, index) => {
-              const stepHasInfo = isStepCompleted(stage, timelineCtx);
+            {allCustomStagesHiddenForExternal && (
+              <p className="text-center text-gray-600 py-8 px-4 mb-2 bg-white/60 rounded-xl border border-indigo-100">
+                {lang === 'ar' || lang === 'ur'
+                  ? 'لا توجد مراحل مفعّلة للعرض في واجهة المكتب الخارجي (جميع المراحل مخفية).'
+                  : 'No stages are shown for the external office — all stages are hidden in settings.'}
+              </p>
+            )}
+
+            {stepRows.map((row, index) => {
+              const field = row.mode === 'custom' ? row.stage.field : row.key;
+              const label =
+                row.mode === 'custom' ? row.stage.label : stepLabels[row.key];
+              const stepHasInfo =
+                row.mode === 'custom'
+                  ? isCustomStageComplete(row.stage, timelineCtx, arrival)
+                  : isStepCompleted(row.key, timelineCtx);
               const isCompleted = stepHasInfo;
               const isCurrent =
                 !stepHasInfo &&
                 index === firstIncomplete &&
-                firstIncomplete < TRACK_ORDER_STEPS.length;
-              const stageDetails = getStageDetails(stage, arrival, t.viewFile);
-              const isExpanded = expandedStage === stage;
-              const isUploadStage = stage === 'medicalCheck';
+                firstIncomplete < stepRows.length;
+              const stageDetails =
+                row.mode === 'custom' && isTrackOrderStep(row.stage.field)
+                  ? getStageDetails(row.stage.field, arrival, t.viewFile)
+                  : row.mode === 'default'
+                    ? getStageDetails(row.key, arrival, t.viewFile)
+                    : null;
+              const isExpanded = expandedField === field;
+              const stageInteraction =
+                row.mode === 'custom' ? row.stage.interactionType ?? 'none' : 'none';
+
+              /** تفاعل سؤال/ملف مخصص: مسموح لأي مرحلة سبقتها مكتملة (بدون اشتراط أن تكون هي أول مرحلة ناقصة — وإلا تبقى مقفولة بعد الإكمال) */
+              const allowCustomInteraction =
+                row.mode === 'custom' &&
+                sortedCustomStages.length > 0 &&
+                canCompleteCustomMedical(sortedCustomStages, index, timelineCtx, arrival);
+
+              const showLegacyMedicalUpload =
+                field === 'medicalCheck' &&
+                !(row.mode === 'custom' && (stageInteraction === 'question' || stageInteraction === 'file'));
+
               const allowMedicalUpload =
-                isUploadStage &&
+                showLegacyMedicalUpload &&
                 isCurrent &&
                 canCompleteStep('medicalCheck', timelineCtx);
 
+              const showQuestionUI =
+                row.mode === 'custom' &&
+                stageInteraction === 'question' &&
+                Boolean(row.stage.questionText) &&
+                (row.stage.answerOptions?.length ?? 0) >= 2;
+
+              const showCustomFileUI = row.mode === 'custom' && stageInteraction === 'file';
+
+              const savedAnswer = getCustomStageEntry(arrival, field)?.answer;
+              const savedFileUrl = getCustomStageEntry(arrival, field)?.fileUrl;
+
               return (
                 <motion.div
-                  key={stage}
+                  key={field}
                   initial={{ opacity: 0, x: lang === 'ur' || lang === 'ar' ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05, duration: 0.4 }}
@@ -610,11 +909,11 @@ export default function TimelinePage() {
                   <div className={lang === 'ur' || lang === 'ar' ? 'mr-8' : 'ml-8'} style={{ width: '100%' }}>
                     <motion.div
                       className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-xl cursor-pointer"
-                      onClick={() => setExpandedStage(isExpanded ? null : stage)}
+                      onClick={() => setExpandedField(isExpanded ? null : field)}
                       whileHover={{ y: -2 }}
                     >
                       <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-800">{stepLabels[stage]}</h2>
+                        <h2 className="text-2xl font-bold text-gray-800">{label}</h2>
                         <FaInfoCircle className="text-indigo-500 text-lg" />
                       </div>
                       <p className="text-gray-600 mt-2 font-medium">
@@ -637,7 +936,144 @@ export default function TimelinePage() {
                                 </p>
                               ))}
 
-                            {isUploadStage && (
+                            {row.mode === 'custom' && !stageDetails && !showQuestionUI && !showCustomFileUI && (
+                              <p className="text-sm text-gray-500 mt-2">
+                                <span className="font-mono">{row.stage.field}</span>
+                              </p>
+                            )}
+
+                            {showQuestionUI && row.mode === 'custom' && (
+                              <div
+                                className="mt-4 space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-4"
+                                onClick={(e) => e.stopPropagation()}
+                                role="presentation"
+                              >
+                                <p className="font-medium text-gray-900">{row.stage.questionText}</p>
+                                {row.stage.answerType === 'options' ? (
+                                  <select
+                                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                                    value={
+                                      answerDraft[field] ??
+                                      savedAnswer ??
+                                      ''
+                                    }
+                                    onChange={(e) =>
+                                      setAnswerDraft((d) => ({ ...d, [field]: e.target.value }))
+                                    }
+                                    disabled={!allowCustomInteraction}
+                                  >
+                                    <option value="">{t.selectOption}</option>
+                                    {(row.stage.answerOptions ?? []).map((opt) => (
+                                      <option key={opt} value={opt}>
+                                        {opt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    {(row.stage.answerOptions ?? []).map((opt) => (
+                                      <label
+                                        key={opt}
+                                        className={`flex items-center gap-2 text-sm ${!allowCustomInteraction ? 'cursor-default' : 'cursor-pointer'}`}
+                                      >
+                                        <input
+                                          type="radio"
+                                          name={`timeline-q-${field}`}
+                                          value={opt}
+                                          checked={
+                                            (answerDraft[field] ?? savedAnswer ?? '') === opt
+                                          }
+                                          onChange={() =>
+                                            setAnswerDraft((d) => ({ ...d, [field]: opt }))
+                                          }
+                                          disabled={!allowCustomInteraction}
+                                        />
+                                        <span>{opt}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                {allowCustomInteraction && (
+                                  <button
+                                    type="button"
+                                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                                    disabled={savingQuestionField === field}
+                                    onClick={() =>
+                                      saveQuestionAnswer(
+                                        field,
+                                        answerDraft[field] ?? savedAnswer ?? ''
+                                      )
+                                    }
+                                  >
+                                    {savingQuestionField === field ? t.savingAnswer : t.saveAnswer}
+                                  </button>
+                                )}
+                                {savedAnswer && (
+                                  <p className="text-sm text-green-700">
+                                    {lang === 'ar' || lang === 'ur'
+                                      ? `الإجابة المحفوظة: ${savedAnswer}`
+                                      : `Saved: ${savedAnswer}`}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {showCustomFileUI && row.mode === 'custom' && (
+                              <div
+                                className="mt-4 space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-4"
+                                onClick={(e) => e.stopPropagation()}
+                                role="presentation"
+                              >
+                                <label className="block text-sm font-medium text-gray-700">
+                                  {t.customFileLabel}
+                                </label>
+                                {savedFileUrl ? (
+                                  <p className="text-green-700">
+                                    {t.customFileSaved}{' '}
+                                    <a
+                                      href={savedFileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="underline text-indigo-600"
+                                    >
+                                      {t.viewFile}
+                                    </a>
+                                  </p>
+                                ) : null}
+                                {allowCustomInteraction && (
+                                  <>
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.doc,.docx,.jpg,.png"
+                                      className="mt-1 block w-full text-sm text-gray-500"
+                                      onChange={(e) => {
+                                        const f = e.target.files?.[0] ?? null;
+                                        setCustomFilePick((m) => ({ ...m, [field]: f }));
+                                      }}
+                                    />
+                                    {customFilePick[field] && (
+                                      <button
+                                        type="button"
+                                        className="mt-2 inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                                        disabled={uploadingCustomField === field}
+                                        onClick={() => {
+                                          const f = customFilePick[field];
+                                          if (f) uploadCustomStageFile(field, f);
+                                        }}
+                                      >
+                                        <FaUpload className="me-2" />
+                                        {uploadingCustomField === field ? t.uploading : t.uploadButton}
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {!allowCustomInteraction && !savedFileUrl && (
+                                  <p className="text-sm italic text-gray-500">{t.medicalFileRestricted}</p>
+                                )}
+                              </div>
+                            )}
+
+                            {showLegacyMedicalUpload && (
                               <div className="mt-4">
                                 {arrival?.medicalCheckFile ? (
                                   <p className="text-green-600 font-medium">
@@ -682,7 +1118,9 @@ export default function TimelinePage() {
                                         </a>
                                       </p>
                                     )}
-                                    {uploadStatus === 'error' && <p className="mt-2 text-red-600">{t.uploadError}</p>}
+                                    {uploadStatus === 'error' && !saveErrorDetail ? (
+                                      <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                    ) : null}
                                   </>
                                 ) : (
                                   <p className="text-gray-500 italic">{t.medicalFileRestricted}</p>

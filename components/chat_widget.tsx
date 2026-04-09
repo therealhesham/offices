@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import classNames from 'classnames';
 import { FiMessageSquare, FiSend, FiX } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
-import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -22,7 +21,6 @@ const ChatWidget: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
-  const { t } = useTranslation('common');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -62,13 +60,13 @@ const ChatWidget: React.FC = () => {
       const response = await axios.post('/api/chat', { message: text });
       const botMessage: Message = {
         id: crypto.randomUUID(),
-        text: response.data.reply || t('chat.botResponse'), // Fallback response
+        text: response.data.reply || "Thanks for your message.", // Fallback response
         sender: 'bot',
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      toast.error(t('chat.error'));
+      toast.error('Could not send message. Please try again.');
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
@@ -99,7 +97,7 @@ const ChatWidget: React.FC = () => {
             ? 'bg-indigo-600 text-white focus:ring-indigo-500'
             : 'bg-indigo-500 text-white focus:ring-indigo-400'
         )}
-        aria-label={isOpen ? t('chat.close') : t('chat.open')}
+        aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
         {isOpen ? <FiX size={24} /> : <FiMessageSquare size={24} />}
       </motion.button>
@@ -119,13 +117,13 @@ const ChatWidget: React.FC = () => {
           >
             {/* Header */}
             <div className="bg-indigo-500 p-4 text-white">
-              <h3 className="text-lg font-semibold">{t('chat.title')}</h3>
+              <h3 className="text-lg font-semibold">Chat</h3>
             </div>
 
             {/* Messages */}
             <div className="h-64 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
-                <p className="text-center text-sm opacity-60">{t('chat.empty')}</p>
+                <p className="text-center text-sm opacity-60">No messages yet</p>
               ) : (
                 messages.map((msg) => (
                   <div
@@ -164,7 +162,7 @@ const ChatWidget: React.FC = () => {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={t('chat.placeholder')}
+                  placeholder="Type a message…"
                   className={classNames(
                     'flex-1 rounded-lg border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500',
                     theme === 'dark'
@@ -183,7 +181,7 @@ const ChatWidget: React.FC = () => {
                       : 'hover:bg-indigo-100',
                     theme === 'dark' ? 'text-white' : 'text-indigo-500'
                   )}
-                  aria-label={t('chat.send')}
+                  aria-label="Send message"
                 >
                   <FiSend size={20} />
                 </button>

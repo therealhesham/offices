@@ -14,6 +14,7 @@ import {
   SunIcon,
   MoonIcon,
   ArrowLeftOnRectangleIcon, // Added for logout
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MessageSquareIcon, SettingsIcon } from 'lucide-react';
@@ -30,6 +31,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [hasCustomTimeline, setHasCustomTimeline] = useState(false);
   const pathname = usePathname();
   const [officeName,setOfficeName]=useState("")
   const translation = useLanguage();
@@ -45,12 +47,18 @@ export default function Sidebar() {
 // alert(awaiter?.name)
   }
   useEffect(() => {
-    checkCAr()
+    checkCAr();
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState) {
       setIsCollapsed(JSON.parse(savedState));
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasCustomTimeline(localStorage.getItem('useCustomTimeline') === '1');
+    }
+  }, [pathname]);
 
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
@@ -79,6 +87,8 @@ const waiter = await loggingOut.json()
 if(loggingOut.ok){
 
 localStorage.removeItem("_item")
+localStorage.removeItem("officeCountry")
+localStorage.removeItem("useCustomTimeline")
 
 router.push("/login")
 
@@ -87,6 +97,22 @@ router.push("/login")
 
   const navItems = [
     { name: translation.language === 'fra' ? "PAGE D'ACCUEIL" : translation.language === 'ur' ? "گھر کا صفحہ" :translation.language ==='ar'? "الصفحة الرئيسية" : "Home", href: '/home', icon: HomeIcon },
+    ...(hasCustomTimeline
+      ? [
+          {
+            name:
+              translation.language === 'fra'
+                ? 'Chronologie personnalisée'
+                : translation.language === 'ur'
+                  ? 'حسبِ ضرورت ٹائم لائن'
+                  : translation.language === 'ar'
+                    ? 'الجدول المخصص'
+                    : 'Custom timeline',
+            href: '/custom-timeline',
+            icon: ClockIcon,
+          },
+        ]
+      : []),
     { name: translation.language === 'fra' ? 'Réservée' : translation.language === 'ur' ? "بک کروایا" :translation.language ==='ar'? "العاملات المحجوزة" : "Booked Homemaid", href: '/bookedhomemaid', icon: CalendarIcon },
     { name: translation.language === 'fra' ? 'Femmes de ménage disponibles' : translation.language === 'ur' ? 'دستیاب گھریلو ملازمہ' :translation.language ==='ar'? "العاملات المتاحة" : 'Available Homemaids', href: '/availablelist', icon: UsersIcon },
     { name: translation.language === 'fra' ? 'Liste complète ' : translation.language === 'ur' ? 'مکمل فہرست' :translation.language ==='ar'? "كل العاملات" : 'Full List', href: '/workerlist', icon: ListBulletIcon },

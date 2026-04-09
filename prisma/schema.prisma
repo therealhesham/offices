@@ -617,7 +617,7 @@ guaranteeStatus               String?  @db.VarChar(100)
   GuaranteeDurationEnd      DateTime?
   travelPermit              String?
   travelPermitDate          DateTime?
-  medicalCheckFile          String?   @db.VarChar(191)
+  medicalCheckFile          String?   @db.VarChar(512) // Spaces URL + path can exceed 191
   ticketFile                String?   @db.VarChar(191)
   visaIssuanceDate          DateTime?
   deparatureTicketFile      String?    @db.VarChar(255)

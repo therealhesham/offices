@@ -39,8 +39,18 @@ const c = useContext(LanguageContext)
 
       if (response.ok && data.token) {
         localStorage.setItem('_item', data.token);
+        if (data.country) {
+          localStorage.setItem('officeCountry', data.country);
+        } else {
+          localStorage.removeItem('officeCountry');
+        }
+        if (data.useCustomTimeline) {
+          localStorage.setItem('useCustomTimeline', '1');
+        } else {
+          localStorage.removeItem('useCustomTimeline');
+        }
         setError('');
-        router.push('/home');
+        router.push(data.useCustomTimeline ? '/custom-timeline' : '/home');
       } else {
         setError(data.message || 'Invalid credentials.');
       }

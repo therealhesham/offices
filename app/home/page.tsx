@@ -16,6 +16,7 @@ import ChatWidget from '@/components/chat_widget';
 import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip as ChartTooltip, Legend, Title } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { translateBookingStatus } from '../lib/bookingStatusTranslations';
+import { syncOfficeCustomTimelineFlag } from '../lib/officeCustomTimeline';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, ChartTooltip, Legend, Title);
@@ -37,6 +38,11 @@ const[officeName,setOfficeName]=useState("")
       setOfficeName(payload.office)
       setUrl(payload?.url);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    syncOfficeCustomTimelineFlag();
   }, []);
 
   const [colorScheme, setColorScheme] = useState(() => {
@@ -283,7 +289,7 @@ const[officeName,setOfficeName]=useState("")
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center space-x-4">
-          {url !== null ? (
+          {url ? (
   <img src={url} alt="Company Logo" className="h-10 w-10 rounded-full object-cover" />
 ) : (
   <span className="flex h-10 w-10 items-center justify-center bg-indigo-500 text-white text-lg font-semibold rounded-full">
