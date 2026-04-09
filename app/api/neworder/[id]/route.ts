@@ -83,10 +83,16 @@ export async function PATCH(request: Request, { params }: Params) {
         prevField.date = now;
       }
 
-      if (patch.fileUrl !== undefined && typeof patch.fileUrl === 'string' && patch.fileUrl.trim()) {
-        prevField.fileUrl = patch.fileUrl.trim();
-        prevField.completed = true;
-        prevField.date = now;
+      if (patch.fileUrl !== undefined) {
+        if (patch.fileUrl === null || patch.fileUrl === '') {
+          delete prevField.fileUrl;
+          prevField.completed = false;
+          prevField.date = now;
+        } else if (typeof patch.fileUrl === 'string' && patch.fileUrl.trim()) {
+          prevField.fileUrl = patch.fileUrl.trim();
+          prevField.completed = true;
+          prevField.date = now;
+        }
       }
 
       const merged: Record<string, Record<string, unknown>> = {
@@ -99,6 +105,39 @@ export async function PATCH(request: Request, { params }: Params) {
         data: { customTimelineStages: merged as Prisma.InputJsonValue },
       });
 
+      return NextResponse.json({ arrival: updated });
+    }
+
+    /** تاريخ الفحص الطبي فقط (بدون رفع ملف) — قيمة فارغة تمسح التاريخ */
+    if ('medicalCheckDate' in body) {
+      const raw = body.medicalCheckDate;
+      let nextDate: Date | null = null;
+      if (raw === null || raw === '') {
+        nextDate = null;
+      } else if (typeof raw === 'string') {
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) {
+          return NextResponse.json({ error: 'Invalid medicalCheckDate' }, { status: 400 });
+        }
+        nextDate = d;
+      } else {
+        return NextResponse.json({ error: 'Invalid medicalCheckDate' }, { status: 400 });
+      }
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { medicalCheckDate: nextDate },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+
+    /** مسح ملف الفحص الطبي من العمود */
+    if ('medicalCheckFile' in body && body.medicalCheckFile === null) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: {
+          medicalCheckFile: null,
+        },
+      });
       return NextResponse.json({ arrival: updated });
     }
 
@@ -117,7 +156,10 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     return NextResponse.json(
-      { error: 'Provide medicalCheckFile or patchCustomTimelineStage' },
+      {
+        error:
+          'Provide medicalCheckFile (string or null), medicalCheckDate, or patchCustomTimelineStage',
+      },
       { status: 400 }
     );
   } catch (error) {

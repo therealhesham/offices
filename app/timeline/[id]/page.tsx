@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
 import {
@@ -9,6 +9,7 @@ import {
   FaTimesCircle,
   FaInfoCircle,
   FaUpload,
+  FaTimes,
 } from 'react-icons/fa';
 import AWS from 'aws-sdk';
 import Sidebar from '@/app/components/Sidebar';
@@ -17,6 +18,20 @@ import { isStageVisibleOnExternalOffice, type TimelineStage } from '@/app/lib/ti
 import { fetchCustomTimelineForOffice } from '@/app/lib/officeCustomTimeline';
 import { getSpacesPublicObjectUrl } from '@/app/lib/spacesPublicUrl';
 import { normalizeCustomStagesPrev } from '@/app/lib/customTimelineStagesJson';
+
+/** أزرار الرفع والإجراءات الرئيسية — تباين عالٍ ووضوح */
+const BTN_UPLOAD_PRIMARY =
+  'inline-flex items-center justify-center gap-2 min-h-[48px] px-6 py-3 rounded-xl text-base font-bold text-white shadow-lg shadow-indigo-600/40 bg-gradient-to-b from-indigo-500 to-indigo-700 ring-2 ring-white/40 hover:from-indigo-600 hover:to-indigo-900 hover:shadow-xl hover:ring-indigo-200/80 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-indigo-400/70 disabled:opacity-60 disabled:cursor-not-allowed transition';
+
+const BTN_SAVE_DATE =
+  'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-md shadow-emerald-600/35 bg-gradient-to-b from-emerald-500 to-emerald-700 ring-2 ring-white/30 hover:from-emerald-600 hover:to-emerald-900 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-emerald-400/60 disabled:opacity-60 transition';
+
+const INPUT_FILE_PROMINENT =
+  'mt-2 block w-full cursor-pointer text-sm file:mr-4 file:cursor-pointer file:rounded-xl file:border-2 file:border-indigo-500 file:bg-indigo-50 file:px-5 file:py-3 file:text-sm file:font-bold file:text-indigo-900 file:shadow-md hover:file:bg-indigo-100 hover:file:border-indigo-600';
+
+/** زر × صغير لإزالة الملف المرفوع */
+const BTN_REMOVE_UPLOADED_FILE =
+  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-red-400 bg-white text-red-600 shadow-sm hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50';
 
 // ——— نفس ترتيب ومنطق pages/admin/track_order/[id].tsx ———
 export const TRACK_ORDER_STEPS = [
@@ -93,6 +108,17 @@ function arrDateTime(a: ArrivalTimeline | null): string {
   const date =
     typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
   return `${date} ${a.KingdomentryTime || ''}`.trim();
+}
+
+/** قيمة input type="date" (محلي) */
+function formatDateForInput(d: string | Date | null | undefined): string {
+  if (!d) return '';
+  const x = typeof d === 'string' ? new Date(d) : d;
+  if (Number.isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** أي قيمة تُعرض كمعلومة فعلية (ليس فراغاً ولا N/A) */
@@ -235,20 +261,6 @@ function getFirstIncompleteCustomIndex(
   return sortedStages.length;
 }
 
-function canCompleteCustomMedical(
-  sortedStages: TimelineStage[],
-  currentIndex: number,
-  ctx: TimelineCtx,
-  arrival: ArrivalTimeline | null
-): boolean {
-  if (currentIndex <= 0) return true;
-  for (let i = 0; i < currentIndex; i++) {
-    if (!isCustomStageComplete(sortedStages[i], ctx, arrival)) return false;
-  }
-  if (sortedStages[currentIndex]?.field === 'receipt' && !isArrivalDatePassed(arrival)) return false;
-  return true;
-}
-
 // ——— عناوين المراحل ———
 const STEP_LABELS: Record<
   'en' | 'fra' | 'ur' | 'ar',
@@ -312,10 +324,16 @@ const STEP_LABELS: Record<
   },
 };
 
+type StageDetailsOptions = {
+  /** معاينة عند الضغط بدل فتح تبويب جديد (يُستخدم لملف الفحص الطبي) */
+  onPreviewFile?: (url: string) => void;
+};
+
 function getStageDetails(
   stage: TrackOrderStep,
   arrival: ArrivalTimeline | null,
-  viewFileLabel: string
+  viewFileLabel: string,
+  options?: StageDetailsOptions
 ): Record<string, React.ReactNode> | null {
   if (!arrival) return null;
 
@@ -327,6 +345,26 @@ function getStageDetails(
     ) : (
       'N/A'
     );
+
+  const previewableFile = (url?: string | null) => {
+    if (!url) return 'N/A' as const;
+    const onPrev = options?.onPreviewFile;
+    if (onPrev) {
+      return (
+        <button
+          type="button"
+          className="font-bold text-indigo-700 underline decoration-2 underline-offset-2 hover:text-indigo-900"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev(url);
+          }}
+        >
+          {viewFileLabel}
+        </button>
+      );
+    }
+    return link(url);
+  };
 
   switch (stage) {
     case 'officeLinkInfo':
@@ -349,11 +387,14 @@ function getStageDetails(
         'External Office Approval': arrival.ExternalOFficeApproval?.toString() || 'N/A',
         'External Office File': link(arrival.externalOfficeFile),
       };
-    case 'medicalCheck':
+    case 'medicalCheck': {
+      const customMedicalFile = getCustomStageEntry(arrival, 'medicalCheck')?.fileUrl?.trim();
+      const medicalFileUrl = customMedicalFile || arrival.medicalCheckFile || null;
       return {
         'Medical Check Date': arrival.medicalCheckDate?.toString() || 'N/A',
-        'Medical Check File': link(arrival.medicalCheckFile),
+        'Medical Check File': previewableFile(medicalFileUrl),
       };
+    }
     case 'foreignLaborApproval':
       return {
         'foreignLaborApprovalDate': arrival.foreignLaborApprovalDate?.toString() || 'N/A',
@@ -404,6 +445,7 @@ const ui = {
     inProgress: 'In progress',
     pending: 'Pending',
     uploadLabel: 'Upload medical check file',
+    replaceMedicalFileLabel: 'Upload a new file (replaces the current one)',
     uploadButton: 'Upload',
     uploading: 'Uploading...',
     uploadSuccess: 'Uploaded successfully. ',
@@ -411,7 +453,6 @@ const ui = {
     uploadOkDbFailed: 'File uploaded to storage, but the database did not save.',
     viewFile: 'View file',
     medicalFileUploaded: 'Medical file already uploaded. ',
-    medicalFileRestricted: 'Upload is only allowed for the current stage when previous steps are done.',
     orderNotFound: 'Order not found',
     saveAnswer: 'Save answer',
     savingAnswer: 'Saving...',
@@ -420,6 +461,14 @@ const ui = {
     customFileLabel: 'Upload file',
     customFileSaved: 'File uploaded.',
     selectOption: 'Choose an option',
+    medicalCheckDateLabel: 'Medical exam date',
+    saveMedicalDate: 'Save date',
+    savingMedicalDate: 'Saving...',
+    medicalCheckDateHint: 'You can set the date without uploading a file. Clearing the date removes it.',
+    previewFileTitle: 'File preview',
+    previewNoEmbed: 'This file type cannot be shown here.',
+    openInNewTab: 'Open in new tab',
+    removeFileAria: 'Remove uploaded file',
   },
   ar: {
     title: 'الجدول الزمني للطلب: {name}',
@@ -429,6 +478,7 @@ const ui = {
     inProgress: 'قيد التنفيذ',
     pending: 'معلق',
     uploadLabel: 'رفع ملف الفحص الطبي',
+    replaceMedicalFileLabel: 'رفع ملف جديد (يستبدل الملف الحالي)',
     uploadButton: 'رفع',
     uploading: 'جارٍ الرفع...',
     uploadSuccess: 'تم الرفع بنجاح. ',
@@ -436,7 +486,6 @@ const ui = {
     uploadOkDbFailed: 'تم رفع الملف للتخزين لكن لم يُحفظ في قاعدة البيانات.',
     viewFile: 'عرض الملف',
     medicalFileUploaded: 'تم رفع الملف مسبقاً. ',
-    medicalFileRestricted: 'الرفع متاح للمرحلة الحالية بعد إكمال المراحل السابقة.',
     orderNotFound: 'الطلب غير موجود',
     saveAnswer: 'حفظ الإجابة',
     savingAnswer: 'جارٍ الحفظ...',
@@ -445,6 +494,14 @@ const ui = {
     customFileLabel: 'رفع ملف للمرحلة',
     customFileSaved: 'تم رفع الملف.',
     selectOption: 'اختر خياراً',
+    medicalCheckDateLabel: 'تاريخ الفحص الطبي',
+    saveMedicalDate: 'حفظ التاريخ',
+    savingMedicalDate: 'جارٍ الحفظ...',
+    medicalCheckDateHint: 'يمكنك حفظ التاريخ دون رفع ملف. لمسح التاريخ اترك الحقل فارغاً ثم احفظ.',
+    previewFileTitle: 'معاينة الملف',
+    previewNoEmbed: 'لا يمكن عرض هذا النوع من الملفات هنا.',
+    openInNewTab: 'فتح في تبويب جديد',
+    removeFileAria: 'إزالة الملف المرفوع',
   },
   fra: {
     title: 'Chronologie: {name}',
@@ -454,6 +511,7 @@ const ui = {
     inProgress: 'En cours',
     pending: 'En attente',
     uploadLabel: 'Télécharger le fichier médical',
+    replaceMedicalFileLabel: 'Nouveau fichier (remplace l’actuel)',
     uploadButton: 'Envoyer',
     uploading: 'Envoi...',
     uploadSuccess: 'Envoyé. ',
@@ -461,7 +519,6 @@ const ui = {
     uploadOkDbFailed: 'Fichier envoyé au stockage, mais pas enregistré en base.',
     viewFile: 'Voir',
     medicalFileUploaded: 'Fichier déjà envoyé. ',
-    medicalFileRestricted: 'Envoi réservé à l’étape en cours.',
     orderNotFound: 'Commande introuvable',
     saveAnswer: 'Enregistrer la réponse',
     savingAnswer: 'Enregistrement...',
@@ -470,6 +527,14 @@ const ui = {
     customFileLabel: 'Télécharger un fichier',
     customFileSaved: 'Fichier envoyé.',
     selectOption: 'Choisir une option',
+    medicalCheckDateLabel: 'Date de l’examen médical',
+    saveMedicalDate: 'Enregistrer la date',
+    savingMedicalDate: 'Enregistrement...',
+    medicalCheckDateHint: 'Vous pouvez enregistrer la date sans fichier. Videz le champ puis enregistrer pour effacer.',
+    previewFileTitle: 'Aperçu du fichier',
+    previewNoEmbed: 'Ce type de fichier ne peut pas être affiché ici.',
+    openInNewTab: 'Ouvrir dans un nouvel onglet',
+    removeFileAria: 'Retirer le fichier',
   },
   ur: {
     title: 'ٹائم لائن: {name}',
@@ -479,6 +544,7 @@ const ui = {
     inProgress: 'جاری',
     pending: 'زیر التواء',
     uploadLabel: 'طبی فائل',
+    replaceMedicalFileLabel: 'نیا فائل اپ لوڈ (موجودہ کی جگہ)',
     uploadButton: 'اپ لوڈ',
     uploading: 'اپ لوڈ...',
     uploadSuccess: 'کامیاب۔ ',
@@ -486,7 +552,6 @@ const ui = {
     uploadOkDbFailed: 'فائل اپ لوڈ ہو گئی مگر ڈیٹا بیس میں نہیں۔',
     viewFile: 'دیکھیں',
     medicalFileUploaded: 'پہلے سے موجود۔ ',
-    medicalFileRestricted: 'موجودہ مرحلے کے لیے۔',
     orderNotFound: 'نہیں ملا',
     saveAnswer: 'جواب محفوظ کریں',
     savingAnswer: 'محفوظ ہو رہا ہے...',
@@ -495,6 +560,14 @@ const ui = {
     customFileLabel: 'فائل اپ لوڈ',
     customFileSaved: 'فائل اپ لوڈ ہو گئی۔',
     selectOption: 'منتخب کریں',
+    medicalCheckDateLabel: 'طبی معائنہ کی تاریخ',
+    saveMedicalDate: 'تاریخ محفوظ کریں',
+    savingMedicalDate: 'محفوظ ہو رہا ہے...',
+    medicalCheckDateHint: 'بغیر فائل کے تاریخ محفوظ کر سکتے ہیں۔ خالی کر کے محفوظ کریں تو تاریخ ہٹ جائے گی۔',
+    previewFileTitle: 'فائل کا پیش منظر',
+    previewNoEmbed: 'یہ فائل یہاں نہیں دکھائی جا سکتی۔',
+    openInNewTab: 'نئی ٹیب میں کھولیں',
+    removeFileAria: 'فائل ہٹائیں',
   },
 };
 
@@ -502,6 +575,78 @@ type AppLanguage = 'en' | 'fra' | 'ur' | 'ar';
 
 function isAppLanguage(v: string | null | undefined): v is AppLanguage {
   return v === 'en' || v === 'fra' || v === 'ur' || v === 'ar';
+}
+
+function FilePreviewModal({
+  url,
+  onClose,
+  title,
+  noEmbed,
+  openTab,
+}: {
+  url: string;
+  onClose: () => void;
+  title: string;
+  noEmbed: string;
+  openTab: string;
+}) {
+  const pure = url.split('?')[0].toLowerCase();
+  const isPdf = pure.endsWith('.pdf');
+  const isImage = /\.(png|jpe?g|gif|webp)$/i.test(pure);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-2 sm:p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="file-preview-title"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-indigo-600 px-4 py-3 text-white">
+          <span id="file-preview-title" className="font-semibold">
+            {title}
+          </span>
+          <button
+            type="button"
+            className="rounded-lg bg-white/20 px-3 py-1 text-xl font-bold leading-none hover:bg-white/30"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto bg-gray-100">
+          {isPdf ? (
+            <iframe title="PDF preview" src={url} className="h-[min(85vh,800px)] w-full border-0" />
+          ) : isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={url}
+              alt=""
+              className="mx-auto max-h-[min(85vh,800px)] w-auto max-w-full object-contain p-2"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <p className="text-gray-600">{noEmbed}</p>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-indigo-600 px-6 py-2 font-semibold text-white hover:bg-indigo-700"
+              >
+                {openTab}
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ⚠️ استخدم متغيرات بيئة؛ لا تضع مفاتيح في الكود
@@ -536,6 +681,17 @@ export default function TimelinePage() {
   const [savingQuestionField, setSavingQuestionField] = useState<string | null>(null);
   const [uploadingCustomField, setUploadingCustomField] = useState<string | null>(null);
   const [customFilePick, setCustomFilePick] = useState<Record<string, File | null>>({});
+  const [medicalDateDraft, setMedicalDateDraft] = useState('');
+  const [savingMedicalDate, setSavingMedicalDate] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{ url: string } | null>(null);
+  /** 'medical' = legacy column، أو اسم حقل مرحلة مخصصة */
+  const [removingFile, setRemovingFile] = useState<string | null>(null);
+
+  const openFilePreview = useCallback((url: string) => {
+    const u = url?.trim();
+    if (!u) return;
+    setPreviewFile({ url: u });
+  }, []);
 
   let lang: AppLanguage = isAppLanguage(language) ? language : 'en';
   if (typeof window !== 'undefined' && !isAppLanguage(language)) {
@@ -624,6 +780,10 @@ export default function TimelinePage() {
   }, [lang]);
 
   useEffect(() => {
+    setMedicalDateDraft(formatDateForInput(arrival?.medicalCheckDate));
+  }, [arrival?.medicalCheckDate]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       const { stages } = await fetchCustomTimelineForOffice();
@@ -705,6 +865,7 @@ export default function TimelinePage() {
       if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
       setUploadedFileUrl(fileUrl);
       setUploadStatus('success');
+      setExpandedField('medicalCheck');
     } catch (err) {
       console.error(err);
       setUploadStatus('error');
@@ -757,11 +918,89 @@ export default function TimelinePage() {
       }
       if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
       setCustomFilePick((m) => ({ ...m, [field]: null }));
+      setExpandedField(field);
     } catch (e) {
       console.error(e);
       setSaveErrorDetail(e instanceof Error ? e.message : String(e));
     } finally {
       setUploadingCustomField(null);
+    }
+  };
+
+  const removeLegacyMedicalFile = async () => {
+    if (!orderIdParam) return;
+    setRemovingFile('medical');
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ medicalCheckFile: null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setFile(null);
+      setUploadedFileUrl(null);
+      setUploadStatus('idle');
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
+    }
+  };
+
+  const removeCustomStageFile = async (field: string) => {
+    if (!orderIdParam) return;
+    setRemovingFile(field);
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patchCustomTimelineStage: { field, fileUrl: null } }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setCustomFilePick((m) => ({ ...m, [field]: null }));
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
+    }
+  };
+
+  const saveMedicalCheckDate = async () => {
+    if (!orderIdParam) return;
+    setSavingMedicalDate(true);
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicalCheckDate: medicalDateDraft.trim() ? medicalDateDraft.trim() : null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+    } finally {
+      setSavingMedicalDate(false);
     }
   };
 
@@ -788,6 +1027,7 @@ export default function TimelinePage() {
   const clientName = order.ClientName || String(orderIdParam ?? id);
 
   return (
+    <>
     <div className="min-h-screen flex font-sans" dir={lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr'}>
       <Sidebar />
       <div className="min-h-screen flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -851,28 +1091,25 @@ export default function TimelinePage() {
                 firstIncomplete < stepRows.length;
               const stageDetails =
                 row.mode === 'custom' && isTrackOrderStep(row.stage.field)
-                  ? getStageDetails(row.stage.field, arrival, t.viewFile)
+                  ? getStageDetails(row.stage.field, arrival, t.viewFile, {
+                      onPreviewFile: openFilePreview,
+                    })
                   : row.mode === 'default'
-                    ? getStageDetails(row.key, arrival, t.viewFile)
+                    ? getStageDetails(row.key, arrival, t.viewFile, {
+                        onPreviewFile: openFilePreview,
+                      })
                     : null;
               const isExpanded = expandedField === field;
               const stageInteraction =
                 row.mode === 'custom' ? row.stage.interactionType ?? 'none' : 'none';
 
-              /** تفاعل سؤال/ملف مخصص: مسموح لأي مرحلة سبقتها مكتملة (بدون اشتراط أن تكون هي أول مرحلة ناقصة — وإلا تبقى مقفولة بعد الإكمال) */
+              /** تفاعل سؤال/ملف مخصص: مفتوح بدون اشتراط ترتيب المراحل (يمكن تشديدها لاحقاً) */
               const allowCustomInteraction =
-                row.mode === 'custom' &&
-                sortedCustomStages.length > 0 &&
-                canCompleteCustomMedical(sortedCustomStages, index, timelineCtx, arrival);
+                row.mode === 'custom' && sortedCustomStages.length > 0;
 
               const showLegacyMedicalUpload =
                 field === 'medicalCheck' &&
                 !(row.mode === 'custom' && (stageInteraction === 'question' || stageInteraction === 'file'));
-
-              const allowMedicalUpload =
-                showLegacyMedicalUpload &&
-                isCurrent &&
-                canCompleteStep('medicalCheck', timelineCtx);
 
               const showQuestionUI =
                 row.mode === 'custom' &&
@@ -884,6 +1121,20 @@ export default function TimelinePage() {
 
               const savedAnswer = getCustomStageEntry(arrival, field)?.answer;
               const savedFileUrl = getCustomStageEntry(arrival, field)?.fileUrl;
+
+              const allowMedicalDateEdit = showLegacyMedicalUpload;
+
+              const showMedicalDatePicker =
+                field === 'medicalCheck' &&
+                (allowMedicalDateEdit ||
+                  (row.mode === 'custom' && allowCustomInteraction));
+
+              const legacyMedicalFileUrl =
+                (arrival?.medicalCheckFile?.trim() ||
+                  (field === 'medicalCheck'
+                    ? getCustomStageEntry(arrival, 'medicalCheck')?.fileUrl?.trim()
+                    : '') ||
+                  '') || null;
 
               return (
                 <motion.div
@@ -927,6 +1178,8 @@ export default function TimelinePage() {
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             className="mt-4 text-gray-700 space-y-1"
+                            onClick={(e) => e.stopPropagation()}
+                            role="presentation"
                           >
                             {stageDetails &&
                               Object.entries(stageDetails).map(([key, value]) => (
@@ -935,6 +1188,35 @@ export default function TimelinePage() {
                                   <span>{value}</span>
                                 </p>
                               ))}
+
+                            {showMedicalDatePicker && (
+                              <div
+                                className="mt-4 space-y-2 rounded-lg border border-emerald-100 bg-emerald-50/50 p-4"
+                                onClick={(e) => e.stopPropagation()}
+                                role="presentation"
+                              >
+                                <label className="block text-sm font-medium text-gray-700">
+                                  {t.medicalCheckDateLabel}
+                                </label>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <input
+                                    type="date"
+                                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                                    value={medicalDateDraft}
+                                    onChange={(e) => setMedicalDateDraft(e.target.value)}
+                                  />
+                                  <button
+                                    type="button"
+                                    className={BTN_SAVE_DATE}
+                                    disabled={savingMedicalDate}
+                                    onClick={() => saveMedicalCheckDate()}
+                                  >
+                                    {savingMedicalDate ? t.savingMedicalDate : t.saveMedicalDate}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-gray-500">{t.medicalCheckDateHint}</p>
+                              </div>
+                            )}
 
                             {row.mode === 'custom' && !stageDetails && !showQuestionUI && !showCustomFileUI && (
                               <p className="text-sm text-gray-500 mt-2">
@@ -996,7 +1278,7 @@ export default function TimelinePage() {
                                 {allowCustomInteraction && (
                                   <button
                                     type="button"
-                                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                                    className={BTN_UPLOAD_PRIMARY}
                                     disabled={savingQuestionField === field}
                                     onClick={() =>
                                       saveQuestionAnswer(
@@ -1020,24 +1302,40 @@ export default function TimelinePage() {
 
                             {showCustomFileUI && row.mode === 'custom' && (
                               <div
-                                className="mt-4 space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-4"
+                                className="mt-4 space-y-3 rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50/80 p-4 shadow-md ring-1 ring-amber-200/60"
                                 onClick={(e) => e.stopPropagation()}
                                 role="presentation"
                               >
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-bold text-amber-950">
                                   {t.customFileLabel}
                                 </label>
                                 {savedFileUrl ? (
-                                  <p className="text-green-700">
-                                    {t.customFileSaved}{' '}
-                                    <a
-                                      href={savedFileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="underline text-indigo-600"
+                                  <p className="flex flex-wrap items-center gap-2 text-green-700">
+                                    <span>{t.customFileSaved}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(savedFileUrl);
+                                      }}
                                     >
                                       {t.viewFile}
-                                    </a>
+                                    </button>
+                                    {allowCustomInteraction ? (
+                                      <button
+                                        type="button"
+                                        className={BTN_REMOVE_UPLOADED_FILE}
+                                        aria-label={t.removeFileAria}
+                                        disabled={removingFile === field}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeCustomStageFile(field);
+                                        }}
+                                      >
+                                        <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                      </button>
+                                    ) : null}
                                   </p>
                                 ) : null}
                                 {allowCustomInteraction && (
@@ -1045,7 +1343,7 @@ export default function TimelinePage() {
                                     <input
                                       type="file"
                                       accept=".pdf,.doc,.docx,.jpg,.png"
-                                      className="mt-1 block w-full text-sm text-gray-500"
+                                      className={INPUT_FILE_PROMINENT}
                                       onChange={(e) => {
                                         const f = e.target.files?.[0] ?? null;
                                         setCustomFilePick((m) => ({ ...m, [field]: f }));
@@ -1054,77 +1352,92 @@ export default function TimelinePage() {
                                     {customFilePick[field] && (
                                       <button
                                         type="button"
-                                        className="mt-2 inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                                        className={`mt-2 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
                                         disabled={uploadingCustomField === field}
                                         onClick={() => {
                                           const f = customFilePick[field];
                                           if (f) uploadCustomStageFile(field, f);
                                         }}
                                       >
-                                        <FaUpload className="me-2" />
+                                        <FaUpload className="shrink-0 text-xl" aria-hidden />
                                         {uploadingCustomField === field ? t.uploading : t.uploadButton}
                                       </button>
                                     )}
                                   </>
                                 )}
-                                {!allowCustomInteraction && !savedFileUrl && (
-                                  <p className="text-sm italic text-gray-500">{t.medicalFileRestricted}</p>
-                                )}
                               </div>
                             )}
 
                             {showLegacyMedicalUpload && (
-                              <div className="mt-4">
-                                {arrival?.medicalCheckFile ? (
-                                  <p className="text-green-600 font-medium">
-                                    {t.medicalFileUploaded}
-                                    <a
-                                      href={arrival.medicalCheckFile}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="underline text-indigo-600"
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {legacyMedicalFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.medicalFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(legacyMedicalFileUrl);
+                                      }}
                                     >
                                       {t.viewFile}
-                                    </a>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'medical'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeLegacyMedicalFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
                                   </p>
-                                ) : allowMedicalUpload ? (
-                                  <>
-                                    <label className="block text-sm font-medium text-gray-700">{t.uploadLabel}</label>
-                                    <input
-                                      type="file"
-                                      accept=".pdf,.doc,.docx,.jpg,.png"
-                                      onChange={handleFileChange}
-                                      className="mt-1 block w-full text-sm text-gray-500"
-                                    />
-                                    {file && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleFileUpload();
-                                        }}
-                                        disabled={uploadStatus === 'uploading'}
-                                        className="mt-2 inline-flex items-center px-4 py-2 rounded-full bg-indigo-600 text-white text-sm disabled:opacity-50"
-                                      >
-                                        <FaUpload className="mr-2" />
-                                        {uploadStatus === 'uploading' ? t.uploading : t.uploadButton}
-                                      </button>
-                                    )}
-                                    {uploadStatus === 'success' && (
-                                      <p className="mt-2 text-green-600">
-                                        {t.uploadSuccess}
-                                        <a href={uploadedFileUrl || '#'} target="_blank" rel="noopener noreferrer" className="underline">
-                                          {t.viewFile}
-                                        </a>
-                                      </p>
-                                    )}
-                                    {uploadStatus === 'error' && !saveErrorDetail ? (
-                                      <p className="mt-2 text-red-600">{t.uploadError}</p>
-                                    ) : null}
-                                  </>
-                                ) : (
-                                  <p className="text-gray-500 italic">{t.medicalFileRestricted}</p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {legacyMedicalFileUrl ? t.replaceMedicalFileLabel : t.uploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {file && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFileUpload();
+                                    }}
+                                    disabled={uploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {uploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
                                 )}
+                                {uploadStatus === 'success' && uploadedFileUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {uploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
                               </div>
                             )}
                           </motion.div>
@@ -1139,5 +1452,15 @@ export default function TimelinePage() {
         </div>
       </div>
     </div>
+    {previewFile ? (
+      <FilePreviewModal
+        url={previewFile.url}
+        onClose={() => setPreviewFile(null)}
+        title={t.previewFileTitle}
+        noEmbed={t.previewNoEmbed}
+        openTab={t.openInNewTab}
+      />
+    ) : null}
+    </>
   );
 }
