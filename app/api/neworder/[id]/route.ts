@@ -18,6 +18,8 @@ export async function GET(request: Request, { params }: Params) {
       where: { id: orderId },
       include: {
         arrivals: true,
+        /** لمرحلة externalOfficeInfo — نفس homemaidSource.officeName في وصل GET /api/track_order */
+        HomeMaid: { select: { officeName: true } },
       },
     });
 
@@ -60,6 +62,30 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: 'Arrival record not found' }, { status: 404 });
     }
 
+    /** نفس pages/api/track_order/[id].ts — موافقة المكتب الخارجي */
+    if (
+      body &&
+      typeof body === 'object' &&
+      body.field === 'externalOfficeApproval' &&
+      typeof (body as { value?: unknown }).value === 'boolean'
+    ) {
+      const value = (body as { value: boolean }).value;
+      const updatedArrival = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: {
+          externalOfficeStatus: value ? 'approved' : 'pending',
+          ExternalOFficeApproval: value ? new Date() : null,
+        },
+      });
+      const updatedOrder = await prisma.neworder.update({
+        where: { id: orderId },
+        data: {
+          bookingstatus: value ? 'external_office_approved' : 'pending_external_office',
+        },
+      });
+      return NextResponse.json({ arrival: updatedArrival, order: updatedOrder });
+    }
+
     /** تحديث مرحلة مخصصة في JSON (سؤال / ملف) */
     if (body.patchCustomTimelineStage && typeof body.patchCustomTimelineStage === 'object') {
       const patch = body.patchCustomTimelineStage as {
@@ -71,11 +97,17 @@ export async function PATCH(request: Request, { params }: Params) {
       if (!field) {
         return NextResponse.json({ error: 'patchCustomTimelineStage.field required' }, { status: 400 });
       }
-      if (field === 'medicalCheck') {
+      if (
+        field === 'medicalCheck' ||
+        field === 'visaIssuance' ||
+        field === 'destinations' ||
+        field === 'externalOfficeApproval' ||
+        field === 'receipt'
+      ) {
         return NextResponse.json(
           {
             error:
-              'Medical check uses medicalCheckDate and medicalCheckFile columns only; custom stage JSON is not used for medical check.',
+              'This stage uses database columns only (medicalCheckFile, VisaFile, ticketFile, externalOfficeFile, receivingFile). Use the dedicated PATCH fields.',
           },
           { status: 400 }
         );
@@ -164,10 +196,78 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ arrival: updated });
     }
 
+    if ('VisaFile' in body && body.VisaFile === null) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { VisaFile: null },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+    const visaFilePatch = typeof body.VisaFile === 'string' ? body.VisaFile.trim() : '';
+    if (visaFilePatch) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: {
+          VisaFile: visaFilePatch,
+          visaIssuanceDate: new Date(),
+        },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+
+    if ('ticketFile' in body && body.ticketFile === null) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { ticketFile: null },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+    const ticketPatch = typeof body.ticketFile === 'string' ? body.ticketFile.trim() : '';
+    if (ticketPatch) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { ticketFile: ticketPatch },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+
+    if ('externalOfficeFile' in body && body.externalOfficeFile === null) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { externalOfficeFile: null },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+    const extOfficePatch =
+      typeof body.externalOfficeFile === 'string' ? body.externalOfficeFile.trim() : '';
+    if (extOfficePatch) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { externalOfficeFile: extOfficePatch },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+
+    if ('receivingFile' in body && body.receivingFile === null) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { receivingFile: null },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+    const receivingPatch = typeof body.receivingFile === 'string' ? body.receivingFile.trim() : '';
+    if (receivingPatch) {
+      const updated = await prisma.arrivallist.update({
+        where: { id: arrival.id },
+        data: { receivingFile: receivingPatch },
+      });
+      return NextResponse.json({ arrival: updated });
+    }
+
     return NextResponse.json(
       {
         error:
-          'Provide medicalCheckFile (string or null), medicalCheckDate, or patchCustomTimelineStage',
+          'Provide field+value (e.g. externalOfficeApproval), medicalCheckFile, medicalCheckDate, VisaFile, ticketFile, externalOfficeFile, receivingFile, or patchCustomTimelineStage',
       },
       { status: 400 }
     );

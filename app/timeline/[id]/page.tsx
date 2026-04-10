@@ -94,20 +94,34 @@ export interface OrderForTimeline {
   HomeMaid?: { officeName?: string | null } | null;
 }
 
+/** نفس wasl `pages/admin/home.tsx` getDate — عرض d/m/yyyy */
+function getDate(date: string | Date | null | undefined): string | null {
+  if (!date) return null;
+  const currentDate = new Date(date);
+  if (Number.isNaN(currentDate.getTime())) return null;
+  const formatted =
+    currentDate.getDate() + '/' + (currentDate.getMonth() + 1) + '/' + currentDate.getFullYear();
+  return formatted;
+}
+
+function formatDateDisplay(date: string | Date | null | undefined): string {
+  return getDate(date) ?? 'N/A';
+}
+
 function depDateTime(a: ArrivalTimeline | null): string {
   if (!a?.deparatureCityCountryDate) return 'N/A';
-  const d = a.deparatureCityCountryDate;
-  const date =
-    typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
-  return `${date} ${a.deparatureCityCountryTime || ''}`.trim();
+  const datePart = getDate(a.deparatureCityCountryDate);
+  if (!datePart) return 'N/A';
+  const t = a.deparatureCityCountryTime?.trim();
+  return t ? `${datePart} ${t}` : datePart;
 }
 
 function arrDateTime(a: ArrivalTimeline | null): string {
   if (!a?.KingdomentryDate) return 'N/A';
-  const d = a.KingdomentryDate;
-  const date =
-    typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0];
-  return `${date} ${a.KingdomentryTime || ''}`.trim();
+  const datePart = getDate(a.KingdomentryDate);
+  if (!datePart) return 'N/A';
+  const t = a.KingdomentryTime?.trim();
+  return t ? `${datePart} ${t}` : datePart;
 }
 
 /** قيمة input type="date" (محلي) */
@@ -132,7 +146,16 @@ function hasPresent(v: unknown): boolean {
   return true;
 }
 
-/** المرحلة مكتملة إذا وُجدت أي معلومة واحدة ضمن حقول هذه المرحلة */
+/**
+ * هل المرحلة مكتملة — نفس معيار وصل:
+ * - استجابة GET /api/track_order (الحقول المنطقية approved/passed/issued/received المشتقة من arrivallist)
+ * - و pages/admin/track_order/[id].tsx (isStepCompleted على orderData)
+ *
+ * ملخص: المكتب الخارجي (معلومات) = اسم مكتب العاملة فقط — وصل: !!externalOfficeInfo.officeName؛
+ * موافقة المكتب الخارجي = externalOfficeStatus === 'approved'؛ الفحص = تاريخ فحص فقط؛
+ * التأشيرة = تاريخ إصدار فقط؛ الوجهات = تاريخ مغادرة أو وصول فقط (لا يكفي التذكرة وحدها)؛
+ * الاستلام = تاريخ تسليم فقط.
+ */
 function isStepCompleted(
   step: TrackOrderStep,
   ctx: {
@@ -146,33 +169,33 @@ function isStepCompleted(
 
   switch (step) {
     case 'officeLinkInfo':
-      return [visa, a?.InternalmusanedContract, a?.DateOfApplication].some(hasPresent);
+      return [visa, a?.InternalmusanedContract].some(hasPresent);
     case 'officeLinkApproval':
-      return hasPresent(a?.ExternalDateLinking);
+      return !!a?.ExternalDateLinking;
     case 'externalOfficeInfo':
-      return [ctx.homemaidOfficeName, a?.externalmusanedContract].some(hasPresent);
+      /** pages/admin/track_order/[id].tsx: !!externalOfficeInfo.officeName — من homemaid.officeName؛ hasPresent يستبعد N/A */
+      return hasPresent(ctx.homemaidOfficeName);
     case 'externalOfficeApproval':
-      return [a?.externalOfficeStatus, a?.ExternalOFficeApproval, a?.externalOfficeFile].some(hasPresent);
+      return a?.externalOfficeStatus === 'approved';
     case 'medicalCheck':
-      return [a?.medicalCheckDate, a?.medicalCheckFile].some(hasPresent);
+      return !!a?.medicalCheckDate;
     case 'foreignLaborApproval':
-      return a?.foreignLaborApproval === true || hasPresent(a?.foreignLaborApprovalDate);
+      return !!a?.foreignLaborApprovalDate;
     case 'agencyPayment':
-      return hasPresent(a?.approvalPayment);
+      return !!a?.approvalPayment;
     case 'saudiEmbassyApproval':
-      return hasPresent(a?.EmbassySealing);
+      return !!a?.EmbassySealing;
     case 'visaIssuance':
-      return [a?.visaIssuanceDate, a?.VisaFile].some(hasPresent);
+      return !!a?.visaIssuanceDate;
     case 'travelPermit':
       return hasPresent(a?.travelPermit);
     case 'destinations':
       return (
         (depDateTime(a) !== 'N/A' && depDateTime(a) !== '') ||
-        (arrDateTime(a) !== 'N/A' && arrDateTime(a) !== '') ||
-        [a?.deparatureCityCountry, a?.arrivalSaudiAirport, a?.ticketFile].some(hasPresent)
+        (arrDateTime(a) !== 'N/A' && arrDateTime(a) !== '')
       );
     case 'receipt':
-      return [a?.DeliveryDate, a?.receiptMethod, a?.receivingFile].some(hasPresent);
+      return !!a?.DeliveryDate;
     default:
       return false;
   }
@@ -235,9 +258,15 @@ function getCustomStageEntry(arrival: ArrivalTimeline | null, field: string) {
 }
 
 function isCustomStageComplete(stage: TimelineStage, ctx: TimelineCtx, arrival: ArrivalTimeline | null): boolean {
-  /** الفحص الطبي: أعمدة السجل فقط، لا ملف/سؤال من JSON */
-  if (stage.field === 'medicalCheck') {
-    return isStepCompleted('medicalCheck', ctx);
+  /** مراحل بملفات/حقول في arrivallist (مثل track_order / track_timeline في وصل) — لا تعتمد على fileUrl داخل JSON */
+  if (
+    stage.field === 'medicalCheck' ||
+    stage.field === 'visaIssuance' ||
+    stage.field === 'destinations' ||
+    stage.field === 'externalOfficeApproval' ||
+    stage.field === 'receipt'
+  ) {
+    return isStepCompleted(stage.field, ctx);
   }
   const entry = getCustomStageEntry(arrival, stage.field);
   if (entry?.completed === true) return true;
@@ -380,11 +409,11 @@ function getStageDetails(
       return {
         'Visa / رقم التأشيرة': arrival.visaNumber || 'N/A',
         'Internal Musaned Contract': arrival.InternalmusanedContract || 'N/A',
-        'Date of Application': arrival.DateOfApplication?.toString() || 'N/A',
+        'Date of Application': formatDateDisplay(arrival.DateOfApplication),
       };
     case 'officeLinkApproval':
       return {
-        'External Date Linking': arrival.ExternalDateLinking?.toString() || 'N/A',
+        'External Date Linking': formatDateDisplay(arrival.ExternalDateLinking),
       };
     case 'externalOfficeInfo':
       return {
@@ -393,8 +422,8 @@ function getStageDetails(
     case 'externalOfficeApproval':
       return {
         Status: arrival.externalOfficeStatus || 'N/A',
-        'External Office Approval': arrival.ExternalOFficeApproval?.toString() || 'N/A',
-        'External Office File': link(arrival.externalOfficeFile),
+        'External Office Approval': formatDateDisplay(arrival.ExternalOFficeApproval),
+        'External Office File': previewableFile(arrival.externalOfficeFile?.trim() || null),
       };
     case 'medicalCheck': {
       const dbFile = arrival.medicalCheckFile?.trim() || null;
@@ -403,13 +432,13 @@ function getStageDetails(
       const fileKey = L?.medicalFile ?? 'Medical file';
 
       return {
-        [dateKey]: arrival.medicalCheckDate?.toString() || 'N/A',
+        [dateKey]: formatDateDisplay(arrival.medicalCheckDate),
         [fileKey]: previewableFile(dbFile),
       };
     }
     case 'foreignLaborApproval':
       return {
-        'foreignLaborApprovalDate': arrival.foreignLaborApprovalDate?.toString() || 'N/A',
+        'foreignLaborApprovalDate': formatDateDisplay(arrival.foreignLaborApprovalDate),
       };
     case 'agencyPayment':
       return {
@@ -417,12 +446,12 @@ function getStageDetails(
       };
     case 'saudiEmbassyApproval':
       return {
-        EmbassySealing: arrival.EmbassySealing?.toString() || 'N/A',
+        EmbassySealing: formatDateDisplay(arrival.EmbassySealing),
       };
     case 'visaIssuance':
       return {
-        visaIssuanceDate: arrival.visaIssuanceDate?.toString() || 'N/A',
-        VisaFile: link(arrival.VisaFile),
+        visaIssuanceDate: formatDateDisplay(arrival.visaIssuanceDate),
+        VisaFile: previewableFile(arrival.VisaFile?.trim() || null),
       };
     case 'travelPermit':
       return {
@@ -434,13 +463,13 @@ function getStageDetails(
         'Arrival': arrDateTime(arrival),
         'Departure city': arrival.deparatureCityCountry || 'N/A',
         'Arrival airport': arrival.arrivalSaudiAirport || 'N/A',
-        'Ticket file': link(arrival.ticketFile),
+        'Ticket file': previewableFile(arrival.ticketFile?.trim() || null),
       };
     case 'receipt':
       return {
-        DeliveryDate: arrival.DeliveryDate?.toString() || 'N/A',
+        DeliveryDate: formatDateDisplay(arrival.DeliveryDate),
         receiptMethod: arrival.receiptMethod || 'N/A',
-        receivingFile: arrival.receivingFile || 'N/A',
+        receivingFile: previewableFile(arrival.receivingFile?.trim() || null),
       };
     default:
       return null;
@@ -483,6 +512,24 @@ const ui = {
     removeFileAria: 'Remove uploaded file',
     medicalDetailDate: 'Medical check date',
     medicalDetailFile: 'Medical file',
+    visaUploadLabel: 'Upload visa file',
+    visaReplaceFileLabel: 'Upload a new file (replaces the current visa file)',
+    visaFileUploaded: 'Visa file uploaded. ',
+    ticketUploadLabel: 'Upload ticket file',
+    ticketReplaceFileLabel: 'Upload a new file (replaces the current ticket file)',
+    ticketFileUploaded: 'Ticket file uploaded. ',
+    extOfficeUploadLabel: 'Upload external office document',
+    extOfficeReplaceFileLabel: 'Upload a new file (replaces the current one)',
+    extOfficeFileUploaded: 'External office file uploaded. ',
+    extOfficeApprovalQuestion:
+      'Stage completion (same as Wasl) requires status «approved» — confirm only after the office has approved.',
+    extOfficeConfirmApproval: 'Confirm external office approval',
+    extOfficeRevokeApproval: 'Revoke approval',
+    extOfficeApprovalSaving: 'Saving...',
+    extOfficeApprovedBadge: 'External office approved',
+    receivingUploadLabel: 'Upload handover / receipt document',
+    receivingReplaceFileLabel: 'Upload a new file (replaces the current one)',
+    receivingFileUploaded: 'Receipt document uploaded. ',
   },
   ar: {
     title: 'الجدول الزمني للطلب: {name}',
@@ -518,6 +565,24 @@ const ui = {
     removeFileAria: 'إزالة الملف المرفوع',
     medicalDetailDate: 'تاريخ الفحص الطبي',
     medicalDetailFile: 'ملف الفحص الطبي',
+    visaUploadLabel: 'رفع ملف التأشيرة',
+    visaReplaceFileLabel: 'رفع ملف جديد (يستبدل ملف التأشيرة الحالي)',
+    visaFileUploaded: 'تم رفع ملف التأشيرة. ',
+    ticketUploadLabel: 'رفع ملف التذكرة',
+    ticketReplaceFileLabel: 'رفع ملف جديد (يستبدل ملف التذكرة الحالي)',
+    ticketFileUploaded: 'تم رفع ملف التذكرة. ',
+    extOfficeUploadLabel: 'رفع مستند المكتب الخارجي',
+    extOfficeReplaceFileLabel: 'رفع ملف جديد (يستبدل الحالي)',
+    extOfficeFileUploaded: 'تم رفع مستند المكتب الخارجي. ',
+    extOfficeApprovalQuestion:
+      'اكتمال المرحلة (كما في وصل) يتطلب أن يكون الحالة «approved» — أكّد الموافقة بعد اعتماد المكتب الخارجي.',
+    extOfficeConfirmApproval: 'تأكيد الموافقة',
+    extOfficeRevokeApproval: 'تراجع',
+    extOfficeApprovalSaving: 'جارٍ الحفظ...',
+    extOfficeApprovedBadge: 'تمت موافقة المكتب الخارجي',
+    receivingUploadLabel: 'رفع مستند التسليم / الاستلام',
+    receivingReplaceFileLabel: 'رفع ملف جديد (يستبدل الحالي)',
+    receivingFileUploaded: 'تم رفع مستند الاستلام. ',
   },
   fra: {
     title: 'Chronologie: {name}',
@@ -553,9 +618,24 @@ const ui = {
     removeFileAria: 'Retirer le fichier',
     medicalDetailDate: 'Date de l’examen médical',
     medicalDetailFile: 'Fichier médical',
-    medicalDetailFile1: 'Fichier médical 1',
-    medicalDetailFile2: 'Fichier médical 2',
-    medicalDetailStageAnswer: 'Réponse',
+    visaUploadLabel: 'Téléverser le fichier visa',
+    visaReplaceFileLabel: 'Nouveau fichier (remplace le visa actuel)',
+    visaFileUploaded: 'Fichier visa envoyé. ',
+    ticketUploadLabel: 'Téléverser le billet',
+    ticketReplaceFileLabel: 'Nouveau fichier (remplace le billet actuel)',
+    ticketFileUploaded: 'Billet envoyé. ',
+    extOfficeUploadLabel: 'Téléverser le document du bureau externe',
+    extOfficeReplaceFileLabel: 'Nouveau fichier (remplace l’actuel)',
+    extOfficeFileUploaded: 'Document bureau externe envoyé. ',
+    extOfficeApprovalQuestion:
+      'L’étape est validée (comme Wasl) si le statut est « approved » — confirmez après accord du bureau.',
+    extOfficeConfirmApproval: 'Confirmer l’approbation',
+    extOfficeRevokeApproval: 'Annuler l’approbation',
+    extOfficeApprovalSaving: 'Enregistrement...',
+    extOfficeApprovedBadge: 'Bureau externe approuvé',
+    receivingUploadLabel: 'Téléverser le document de remise',
+    receivingReplaceFileLabel: 'Nouveau fichier (remplace l’actuel)',
+    receivingFileUploaded: 'Document de remise envoyé. ',
   },
   ur: {
     title: 'ٹائم لائن: {name}',
@@ -591,6 +671,24 @@ const ui = {
     removeFileAria: 'فائل ہٹائیں',
     medicalDetailDate: 'طبی معائنہ کی تاریخ',
     medicalDetailFile: 'طبی فائل',
+    visaUploadLabel: 'ویزا فائل اپ لوڈ کریں',
+    visaReplaceFileLabel: 'نئی فائل (موجودہ ویزا فائل بدل دے گی)',
+    visaFileUploaded: 'ویزا فائل اپ لوڈ ہو گئی۔ ',
+    ticketUploadLabel: 'ٹکٹ فائل اپ لوڈ',
+    ticketReplaceFileLabel: 'نئی فائل (موجودہ ٹکٹ بدل دے گی)',
+    ticketFileUploaded: 'ٹکٹ فائل اپ لوڈ ہو گئی۔ ',
+    extOfficeUploadLabel: 'بیرونی دفتر کا دستاویز',
+    extOfficeReplaceFileLabel: 'نئی فائل (موجودہ بدل دے گی)',
+    extOfficeFileUploaded: 'بیرونی دفتر فائل اپ لوڈ۔ ',
+    extOfficeApprovalQuestion:
+      'مرحلہ مکمل (وصل جیسا) صرف «approved» پر — تصدیق دفتر کے بعد کریں۔',
+    extOfficeConfirmApproval: 'منظوری کی تصدیق',
+    extOfficeRevokeApproval: 'واپس',
+    extOfficeApprovalSaving: 'محفوظ ہو رہا ہے...',
+    extOfficeApprovedBadge: 'بیرونی دفتر منظور',
+    receivingUploadLabel: 'حوالگی کا دستاویز',
+    receivingReplaceFileLabel: 'نئی فائل (موجودہ بدل دے گی)',
+    receivingFileUploaded: 'حوالگی فائل اپ لوڈ۔ ',
   },
 };
 
@@ -699,6 +797,26 @@ export default function TimelinePage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [visaFile, setVisaFile] = useState<File | null>(null);
+  const [visaUploadStatus, setVisaUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>(
+    'idle'
+  );
+  const [uploadedVisaUrl, setUploadedVisaUrl] = useState<string | null>(null);
+  const [ticketPick, setTicketPick] = useState<File | null>(null);
+  const [ticketUploadStatus, setTicketUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>(
+    'idle'
+  );
+  const [uploadedTicketUrl, setUploadedTicketUrl] = useState<string | null>(null);
+  const [extOfficePick, setExtOfficePick] = useState<File | null>(null);
+  const [extOfficeUploadStatus, setExtOfficeUploadStatus] = useState<
+    'idle' | 'uploading' | 'success' | 'error'
+  >('idle');
+  const [uploadedExtOfficeUrl, setUploadedExtOfficeUrl] = useState<string | null>(null);
+  const [receivingPick, setReceivingPick] = useState<File | null>(null);
+  const [receivingUploadStatus, setReceivingUploadStatus] = useState<
+    'idle' | 'uploading' | 'success' | 'error'
+  >('idle');
+  const [uploadedReceivingUrl, setUploadedReceivingUrl] = useState<string | null>(null);
   const [saveErrorDetail, setSaveErrorDetail] = useState<string | null>(null);
   const [answerDraft, setAnswerDraft] = useState<Record<string, string>>({});
   const [savingQuestionField, setSavingQuestionField] = useState<string | null>(null);
@@ -709,6 +827,7 @@ export default function TimelinePage() {
   const [previewFile, setPreviewFile] = useState<{ url: string } | null>(null);
   /** 'medical' = legacy column، أو اسم حقل مرحلة مخصصة */
   const [removingFile, setRemovingFile] = useState<string | null>(null);
+  const [externalApprovalSaving, setExternalApprovalSaving] = useState(false);
 
   const openFilePreview = useCallback((url: string) => {
     const u = url?.trim();
@@ -893,6 +1012,372 @@ export default function TimelinePage() {
       console.error(err);
       setUploadStatus('error');
       setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleVisaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setVisaFile(e.target.files[0]);
+      setVisaUploadStatus('idle');
+      setSaveErrorDetail(null);
+    }
+  };
+
+  const handleVisaUpload = async () => {
+    if (!visaFile || !s3 || !orderIdParam) return;
+    setVisaUploadStatus('uploading');
+    setSaveErrorDetail(null);
+    const fileName = `visa/${orderIdParam}/${Date.now()}_${visaFile.name}`;
+    const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
+    const region = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1';
+
+    try {
+      await s3
+        .upload({
+          Bucket: bucket,
+          Key: fileName,
+          Body: visaFile,
+          ACL: 'public-read',
+          ContentType: visaFile.type,
+        })
+        .promise();
+
+      const fileUrl = getSpacesPublicObjectUrl(bucket, region, fileName);
+
+      const patchRes = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ VisaFile: fileUrl }),
+      });
+      const patchBody = await patchRes.json().catch(() => ({}));
+
+      if (!patchRes.ok) {
+        const msg =
+          typeof patchBody.error === 'string' ? patchBody.error : patchRes.statusText || 'PATCH failed';
+        setSaveErrorDetail(msg);
+        setVisaUploadStatus('error');
+        setUploadedVisaUrl(fileUrl);
+        return;
+      }
+
+      if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
+      setUploadedVisaUrl(fileUrl);
+      setVisaUploadStatus('success');
+      setVisaFile(null);
+      setExpandedField('visaIssuance');
+    } catch (err) {
+      console.error(err);
+      setVisaUploadStatus('error');
+      setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const removeVisaFile = async () => {
+    if (!orderIdParam) return;
+    setRemovingFile('visaIssuance');
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ VisaFile: null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setVisaFile(null);
+      setUploadedVisaUrl(null);
+      setVisaUploadStatus('idle');
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
+    }
+  };
+
+  const handleTicketFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setTicketPick(e.target.files[0]);
+      setTicketUploadStatus('idle');
+      setSaveErrorDetail(null);
+    }
+  };
+
+  const handleTicketUpload = async () => {
+    if (!ticketPick || !s3 || !orderIdParam) return;
+    setTicketUploadStatus('uploading');
+    setSaveErrorDetail(null);
+    const fileName = `ticket/${orderIdParam}/${Date.now()}_${ticketPick.name}`;
+    const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
+    const region = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1';
+
+    try {
+      await s3
+        .upload({
+          Bucket: bucket,
+          Key: fileName,
+          Body: ticketPick,
+          ACL: 'public-read',
+          ContentType: ticketPick.type,
+        })
+        .promise();
+
+      const fileUrl = getSpacesPublicObjectUrl(bucket, region, fileName);
+
+      const patchRes = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketFile: fileUrl }),
+      });
+      const patchBody = await patchRes.json().catch(() => ({}));
+
+      if (!patchRes.ok) {
+        const msg =
+          typeof patchBody.error === 'string' ? patchBody.error : patchRes.statusText || 'PATCH failed';
+        setSaveErrorDetail(msg);
+        setTicketUploadStatus('error');
+        setUploadedTicketUrl(fileUrl);
+        return;
+      }
+
+      if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
+      setUploadedTicketUrl(fileUrl);
+      setTicketUploadStatus('success');
+      setTicketPick(null);
+      setExpandedField('destinations');
+    } catch (err) {
+      console.error(err);
+      setTicketUploadStatus('error');
+      setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const removeTicketFile = async () => {
+    if (!orderIdParam) return;
+    setRemovingFile('destinations');
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketFile: null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setTicketPick(null);
+      setUploadedTicketUrl(null);
+      setTicketUploadStatus('idle');
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
+    }
+  };
+
+  const handleExtOfficeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setExtOfficePick(e.target.files[0]);
+      setExtOfficeUploadStatus('idle');
+      setSaveErrorDetail(null);
+    }
+  };
+
+  const handleExtOfficeUpload = async () => {
+    if (!extOfficePick || !s3 || !orderIdParam) return;
+    setExtOfficeUploadStatus('uploading');
+    setSaveErrorDetail(null);
+    const fileName = `external-office/${orderIdParam}/${Date.now()}_${extOfficePick.name}`;
+    const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
+    const region = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1';
+
+    try {
+      await s3
+        .upload({
+          Bucket: bucket,
+          Key: fileName,
+          Body: extOfficePick,
+          ACL: 'public-read',
+          ContentType: extOfficePick.type,
+        })
+        .promise();
+
+      const fileUrl = getSpacesPublicObjectUrl(bucket, region, fileName);
+
+      const patchRes = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalOfficeFile: fileUrl }),
+      });
+      const patchBody = await patchRes.json().catch(() => ({}));
+
+      if (!patchRes.ok) {
+        const msg =
+          typeof patchBody.error === 'string' ? patchBody.error : patchRes.statusText || 'PATCH failed';
+        setSaveErrorDetail(msg);
+        setExtOfficeUploadStatus('error');
+        setUploadedExtOfficeUrl(fileUrl);
+        return;
+      }
+
+      if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
+      setUploadedExtOfficeUrl(fileUrl);
+      setExtOfficeUploadStatus('success');
+      setExtOfficePick(null);
+      setExpandedField('externalOfficeApproval');
+    } catch (err) {
+      console.error(err);
+      setExtOfficeUploadStatus('error');
+      setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  /** نفس PATCH وصل: field externalOfficeApproval + value → externalOfficeStatus + bookingstatus */
+  const setExternalOfficeApproval = async (value: boolean) => {
+    if (!orderIdParam) return;
+    setExternalApprovalSaving(true);
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: 'externalOfficeApproval', value }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      if (data.order) setOrder(data.order as OrderForTimeline);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExternalApprovalSaving(false);
+    }
+  };
+
+  const removeExtOfficeFile = async () => {
+    if (!orderIdParam) return;
+    setRemovingFile('externalOfficeApproval');
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalOfficeFile: null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setExtOfficePick(null);
+      setUploadedExtOfficeUrl(null);
+      setExtOfficeUploadStatus('idle');
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
+    }
+  };
+
+  const handleReceivingFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setReceivingPick(e.target.files[0]);
+      setReceivingUploadStatus('idle');
+      setSaveErrorDetail(null);
+    }
+  };
+
+  const handleReceivingUpload = async () => {
+    if (!receivingPick || !s3 || !orderIdParam) return;
+    setReceivingUploadStatus('uploading');
+    setSaveErrorDetail(null);
+    const fileName = `receiving/${orderIdParam}/${Date.now()}_${receivingPick.name}`;
+    const bucket = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || '';
+    const region = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'sgp1';
+
+    try {
+      await s3
+        .upload({
+          Bucket: bucket,
+          Key: fileName,
+          Body: receivingPick,
+          ACL: 'public-read',
+          ContentType: receivingPick.type,
+        })
+        .promise();
+
+      const fileUrl = getSpacesPublicObjectUrl(bucket, region, fileName);
+
+      const patchRes = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receivingFile: fileUrl }),
+      });
+      const patchBody = await patchRes.json().catch(() => ({}));
+
+      if (!patchRes.ok) {
+        const msg =
+          typeof patchBody.error === 'string' ? patchBody.error : patchRes.statusText || 'PATCH failed';
+        setSaveErrorDetail(msg);
+        setReceivingUploadStatus('error');
+        setUploadedReceivingUrl(fileUrl);
+        return;
+      }
+
+      if (patchBody.arrival) setArrival(patchBody.arrival as ArrivalTimeline);
+      setUploadedReceivingUrl(fileUrl);
+      setReceivingUploadStatus('success');
+      setReceivingPick(null);
+      setExpandedField('receipt');
+    } catch (err) {
+      console.error(err);
+      setReceivingUploadStatus('error');
+      setSaveErrorDetail(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const removeReceivingFile = async () => {
+    if (!orderIdParam) return;
+    setRemovingFile('receipt');
+    setSaveErrorDetail(null);
+    try {
+      const res = await fetch(`/api/neworder/${orderIdParam}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receivingFile: null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveErrorDetail(typeof data.error === 'string' ? data.error : res.statusText);
+        return;
+      }
+      if (data.arrival) setArrival(data.arrival as ArrivalTimeline);
+      setReceivingPick(null);
+      setUploadedReceivingUrl(null);
+      setReceivingUploadStatus('idle');
+      setPreviewFile(null);
+    } catch (e) {
+      console.error(e);
+      setSaveErrorDetail(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemovingFile(null);
     }
   };
 
@@ -1136,9 +1621,17 @@ export default function TimelinePage() {
 
               /** تاريخ + ملف الفحص من أعمدة السجل (دائماً لمرحلة medicalCheck) */
               const showMedicalDbSection = field === 'medicalCheck';
+              const showVisaFileSection = field === 'visaIssuance';
+              const showTicketFileSection = field === 'destinations';
+              const showExternalOfficeFileSection = field === 'externalOfficeApproval';
+              const showReceivingFileSection = field === 'receipt';
 
               const showQuestionUI =
                 field !== 'medicalCheck' &&
+                field !== 'visaIssuance' &&
+                field !== 'destinations' &&
+                field !== 'externalOfficeApproval' &&
+                field !== 'receipt' &&
                 row.mode === 'custom' &&
                 stageInteraction === 'question' &&
                 Boolean(row.stage.questionText) &&
@@ -1146,6 +1639,10 @@ export default function TimelinePage() {
 
               const showCustomFileUI =
                 field !== 'medicalCheck' &&
+                field !== 'visaIssuance' &&
+                field !== 'destinations' &&
+                field !== 'externalOfficeApproval' &&
+                field !== 'receipt' &&
                 row.mode === 'custom' &&
                 stageInteraction === 'file';
 
@@ -1156,6 +1653,10 @@ export default function TimelinePage() {
 
               /** ملف الفحص في عمود قاعدة البيانات فقط (منفصل عن ملف المرحلة المخصصة) */
               const dbMedicalFileUrl = arrival?.medicalCheckFile?.trim() || null;
+              const dbVisaFileUrl = arrival?.VisaFile?.trim() || null;
+              const dbTicketFileUrl = arrival?.ticketFile?.trim() || null;
+              const dbExtOfficeFileUrl = arrival?.externalOfficeFile?.trim() || null;
+              const dbReceivingFileUrl = arrival?.receivingFile?.trim() || null;
 
               return (
                 <motion.div
@@ -1307,6 +1808,336 @@ export default function TimelinePage() {
                                   </p>
                                 )}
                                 {uploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
+                              </div>
+                            )}
+
+                            {showVisaFileSection && (
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {dbVisaFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.visaFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(dbVisaFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'visaIssuance'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void removeVisaFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
+                                  </p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {dbVisaFileUrl ? t.visaReplaceFileLabel : t.visaUploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleVisaFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {visaFile && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleVisaUpload();
+                                    }}
+                                    disabled={visaUploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {visaUploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
+                                )}
+                                {visaUploadStatus === 'success' && uploadedVisaUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedVisaUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {visaUploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
+                              </div>
+                            )}
+
+                            {showTicketFileSection && (
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {dbTicketFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.ticketFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(dbTicketFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'destinations'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void removeTicketFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
+                                  </p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {dbTicketFileUrl ? t.ticketReplaceFileLabel : t.ticketUploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleTicketFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {ticketPick && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleTicketUpload();
+                                    }}
+                                    disabled={ticketUploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {ticketUploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
+                                )}
+                                {ticketUploadStatus === 'success' && uploadedTicketUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedTicketUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {ticketUploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
+                              </div>
+                            )}
+
+                            {showExternalOfficeFileSection && (
+                              <>
+                              <div
+                                className="mt-4 rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4 shadow-sm ring-1 ring-teal-100"
+                                onClick={(e) => e.stopPropagation()}
+                                role="presentation"
+                              >
+                                <p className="mb-3 text-sm text-gray-800">{t.extOfficeApprovalQuestion}</p>
+                                {arrival?.externalOfficeStatus === 'approved' ? (
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <FaCheckCircle className="text-xl text-green-600 shrink-0" aria-hidden />
+                                    <span className="font-semibold text-green-900">{t.extOfficeApprovedBadge}</span>
+                                    <button
+                                      type="button"
+                                      className="rounded-lg border border-amber-700/40 bg-white px-4 py-2 text-sm font-bold text-amber-900 shadow-sm hover:bg-amber-50 disabled:opacity-50"
+                                      disabled={externalApprovalSaving}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void setExternalOfficeApproval(false);
+                                      }}
+                                    >
+                                      {externalApprovalSaving ? t.extOfficeApprovalSaving : t.extOfficeRevokeApproval}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className={BTN_UPLOAD_PRIMARY}
+                                    disabled={externalApprovalSaving}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void setExternalOfficeApproval(true);
+                                    }}
+                                  >
+                                    {externalApprovalSaving ? t.extOfficeApprovalSaving : t.extOfficeConfirmApproval}
+                                  </button>
+                                )}
+                              </div>
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {dbExtOfficeFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.extOfficeFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(dbExtOfficeFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'externalOfficeApproval'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void removeExtOfficeFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
+                                  </p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {dbExtOfficeFileUrl ? t.extOfficeReplaceFileLabel : t.extOfficeUploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleExtOfficeFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {extOfficePick && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleExtOfficeUpload();
+                                    }}
+                                    disabled={extOfficeUploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {extOfficeUploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
+                                )}
+                                {extOfficeUploadStatus === 'success' && uploadedExtOfficeUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedExtOfficeUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {extOfficeUploadStatus === 'error' && !saveErrorDetail ? (
+                                  <p className="mt-2 text-red-600">{t.uploadError}</p>
+                                ) : null}
+                              </div>
+                              </>
+                            )}
+
+                            {showReceivingFileSection && (
+                              <div className="mt-4 rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50/90 p-4 shadow-md ring-1 ring-indigo-200/70">
+                                {dbReceivingFileUrl ? (
+                                  <p className="mb-4 flex flex-wrap items-center gap-2 text-green-700 font-semibold">
+                                    <span>{t.receivingFileUploaded}</span>
+                                    <button
+                                      type="button"
+                                      className="font-bold text-indigo-700 underline decoration-2 hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(dbReceivingFileUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={BTN_REMOVE_UPLOADED_FILE}
+                                      aria-label={t.removeFileAria}
+                                      disabled={removingFile === 'receipt'}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void removeReceivingFile();
+                                      }}
+                                    >
+                                      <FaTimes className="h-3.5 w-3.5" aria-hidden />
+                                    </button>
+                                  </p>
+                                ) : null}
+                                <label className="block text-sm font-bold text-indigo-950">
+                                  {dbReceivingFileUrl ? t.receivingReplaceFileLabel : t.receivingUploadLabel}
+                                </label>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.jpg,.png"
+                                  onChange={handleReceivingFileChange}
+                                  className={INPUT_FILE_PROMINENT}
+                                />
+                                {receivingPick && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleReceivingUpload();
+                                    }}
+                                    disabled={receivingUploadStatus === 'uploading'}
+                                    className={`mt-3 ${BTN_UPLOAD_PRIMARY} w-full sm:w-auto`}
+                                  >
+                                    <FaUpload className="shrink-0 text-xl" aria-hidden />
+                                    {receivingUploadStatus === 'uploading' ? t.uploading : t.uploadButton}
+                                  </button>
+                                )}
+                                {receivingUploadStatus === 'success' && uploadedReceivingUrl && (
+                                  <p className="mt-2 text-green-600">
+                                    {t.uploadSuccess}
+                                    <button
+                                      type="button"
+                                      className="ms-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openFilePreview(uploadedReceivingUrl);
+                                      }}
+                                    >
+                                      {t.viewFile}
+                                    </button>
+                                  </p>
+                                )}
+                                {receivingUploadStatus === 'error' && !saveErrorDetail ? (
                                   <p className="mt-2 text-red-600">{t.uploadError}</p>
                                 ) : null}
                               </div>

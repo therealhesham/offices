@@ -56,11 +56,11 @@ export async function POST(request: Request, { params }: Params) {
     if (!field) {
       return NextResponse.json({ error: 'field required' }, { status: 400 });
     }
-    if (field === 'medicalCheck') {
+    if (field === 'medicalCheck' || field === 'visaIssuance') {
       return NextResponse.json(
         {
           error:
-            'Use PATCH medicalCheckFile on the order arrival for medical check files, not custom stage upload.',
+            'Use PATCH medicalCheckFile or VisaFile on the order arrival for these stages, not custom stage upload.',
         },
         { status: 400 }
       );
