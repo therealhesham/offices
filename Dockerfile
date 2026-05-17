@@ -5,7 +5,8 @@ WORKDIR /app
 # Install system dependencies
 # Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+# --ignore-scripts تمنع تشغيل postinstall/preinstall/uninstall scripts
+RUN npm ci --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM node:22-alpine AS builder
