@@ -1295,18 +1295,18 @@ model AccountSystemLogs  {
   @@index([actionUserId])
 }
 
-// Custom Timeline for specific countries
+// Custom Timeline for specific offices
 model CustomTimeline {
   id                Int       @id @default(autoincrement())
-  country           String    @db.VarChar(255) // الدولة
+  officeId          Int       // Office ID reference
   name              String?   @db.VarChar(255) // اسم الـ timeline (اختياري)
   stages            Json      // Array of stages: [{label: string, field: string, order: number}]
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  @@index([country])
-  @@unique([country])
+  @@index([officeId])
+  @@unique([officeId])
 }
 
 // Complaints Model

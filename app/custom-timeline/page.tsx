@@ -12,7 +12,7 @@ import { FaCheckCircle, FaHourglassHalf, FaUpload, FaQuestionCircle } from 'reac
 
 type TimelinePayload = {
   id: number;
-  country: string;
+  officeId: number;
   name: string | null;
   stages: TimelineStage[];
   isActive: boolean;
@@ -20,20 +20,20 @@ type TimelinePayload = {
 
 export default function CustomTimelinePage() {
   const { language } = useLanguage();
-  const [country, setCountry] = useState<string | null>(null);
+  const [officeId, setOfficeId] = useState<number | null>(null);
   const [timeline, setTimeline] = useState<TimelinePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const c = typeof window !== 'undefined' ? localStorage.getItem('officeCountry') : null;
-    setCountry(c);
+    const oId = typeof window !== 'undefined' ? localStorage.getItem('officeId') : null;
+    setOfficeId(oId ? parseInt(oId, 10) : null);
   }, []);
 
   useEffect(() => {
-    if (!country) {
+    if (!officeId) {
       setLoading(false);
-      setError('no_country');
+      setError('no_office');
       return;
     }
     let cancelled = false;
@@ -42,7 +42,7 @@ export default function CustomTimelinePage() {
       setError(null);
       try {
         const res = await fetch(
-          `/api/custom-timeline/by-country/${encodeURIComponent(country)}`
+          `/api/custom-timeline/by-office/${encodeURIComponent(officeId)}`
         );
         const data = await res.json();
         if (!res.ok) {
@@ -59,7 +59,7 @@ export default function CustomTimelinePage() {
     return () => {
       cancelled = true;
     };
-  }, [country]);
+  }, [officeId]);
 
   const visibleStages = useMemo(() => {
     if (!timeline?.stages?.length) return [];
@@ -73,14 +73,14 @@ export default function CustomTimelinePage() {
     return {
       title: ar ? 'الجدول الزمني المخصص' : 'Custom timeline',
       subtitle: ar
-        ? 'مراحل العمل حسب إعدادات دولة المكتب'
-        : 'Workflow stages for your office country',
-      noCountry: ar
-        ? 'لم يُحدد بلد للمكتب. سجّل الدخول من جديد أو راجع الإعدادات.'
-        : 'Office country is not set. Please sign in again.',
+        ? 'مراحل العمل الخاصة بالمكتب'
+        : 'Workflow stages for your office',
+      noOffice: ar
+        ? 'لم يُحدد معرف المكتب. سجّل الدخول من جديد أو راجع الإعدادات.'
+        : 'Office ID is not set. Please sign in again.',
       notFound: ar
-        ? 'لا يوجد تايم لاين نشط لهذه الدولة.'
-        : 'No active timeline for this country.',
+        ? 'لا يوجد تايم لاين نشط لهذا المكتب.'
+        : 'No active timeline for this office.',
       loadError: ar ? 'تعذر تحميل البيانات.' : 'Could not load timeline.',
       stage: ar ? 'مرحلة' : 'Stage',
       fileHint: ar ? 'رفع ملف' : 'File upload',
@@ -107,18 +107,18 @@ export default function CustomTimelinePage() {
     );
   }
 
-  if (error === 'no_country' || !country) {
+  if (error === 'no_office' || !officeId) {
     return (
       <div className="min-h-screen flex font-sans">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center p-8 text-center text-gray-600">
-          {t.noCountry}
+          {t.noOffice}
         </div>
       </div>
     );
   }
 
-  if (error && error !== 'no_country') {
+  if (error && error !== 'no_office') {
     return (
       <div className="min-h-screen flex font-sans">
         <Sidebar />
@@ -141,8 +141,8 @@ export default function CustomTimelinePage() {
           >
             <h1 className="text-3xl font-extrabold text-gray-900">{t.title}</h1>
             <p className="mt-2 text-gray-600">{t.subtitle}</p>
-            {timeline?.country && (
-              <p className="mt-1 text-sm font-medium text-indigo-700">{timeline.country}</p>
+            {timeline?.officeId && (
+              <p className="mt-1 text-sm font-medium text-indigo-700">Office ID: {timeline.officeId}</p>
             )}
           </motion.div>
 

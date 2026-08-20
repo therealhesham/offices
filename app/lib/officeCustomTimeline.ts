@@ -10,40 +10,39 @@ type OfficeJwtPayload = {
   country?: string | null;
 };
 
-/** دولة المكتب من JWT (نفس `offices.Country` المُخزَّنة عند تسجيل الدخول) */
-export function getOfficeCountryFromToken(): string | null {
+/** رقم المكتب من JWT */
+export function getOfficeIdFromToken(): number | null {
   if (typeof window === 'undefined') return null;
   const tok = localStorage.getItem('_item');
   if (!tok) return null;
   try {
     const p = jwtDecode<OfficeJwtPayload>(tok);
-    const c = typeof p.country === 'string' ? p.country.trim() : '';
-    return c || null;
+    return typeof p.id === 'number' ? p.id : null;
   } catch {
     return null;
   }
 }
 
 /**
- * يطابق `offices.Country` مع `CustomTimeline.country` عبر الـ API.
- * يحدّث `localStorage`: `officeCountry`، `useCustomTimeline` = '1' فقط إن وُجد سجل نشط بنفس النص.
+ * يطابق `offices.id` مع `CustomTimeline.officeId` عبر الـ API.
+ * يحدّث `localStorage`: `officeId`، `useCustomTimeline` = '1' فقط إن وُجد سجل نشط بنفس الرقم.
  */
 export async function fetchCustomTimelineForOffice(): Promise<{
   stages: TimelineStage[] | null;
-  country: string | null;
+  officeId: number | null;
 }> {
-  const country = getOfficeCountryFromToken();
-  if (!country) {
-    localStorage.removeItem('officeCountry');
+  const officeId = getOfficeIdFromToken();
+  if (!officeId) {
+    localStorage.removeItem('officeId');
     localStorage.removeItem('useCustomTimeline');
-    return { stages: null, country: null };
+    return { stages: null, officeId: null };
   }
 
-  localStorage.setItem('officeCountry', country);
+  localStorage.setItem('officeId', officeId.toString());
 
   try {
     const res = await fetch(
-      `/api/custom-timeline/by-country/${encodeURIComponent(country)}`
+      `/api/custom-timeline/by-office/${encodeURIComponent(officeId)}`
     );
     if (res.ok) {
       const data = (await res.json()) as { stages?: unknown };
@@ -52,7 +51,7 @@ export async function fetchCustomTimelineForOffice(): Promise<{
         : [];
       if (stages.length > 0) {
         localStorage.setItem('useCustomTimeline', '1');
-        return { stages, country };
+        return { stages, officeId };
       }
     }
   } catch {
@@ -60,7 +59,7 @@ export async function fetchCustomTimelineForOffice(): Promise<{
   }
 
   localStorage.removeItem('useCustomTimeline');
-  return { stages: null, country };
+  return { stages: null, officeId };
 }
 
 /** مزامنة العلم فقط (للصفحة الرئيسية وغيرها) */

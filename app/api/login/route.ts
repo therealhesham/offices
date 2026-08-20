@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
  
 const prisma = new PrismaClient();
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     // Parse the request body
     const m = await req.json();
@@ -17,9 +17,9 @@ export async function POST(req) {
     if (fetching) {
       const country = fetching.Country?.trim() || null;
       let useCustomTimeline = false;
-      if (country) {
+      if (fetching.id) {
         const row = await prisma.customTimeline.findUnique({
-          where: { country },
+          where: { officeId: fetching.id },
         });
         useCustomTimeline = !!(row && row.isActive);
       }

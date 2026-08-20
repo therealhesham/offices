@@ -13,11 +13,11 @@ function parseStages(raw: unknown): TimelineStage[] {
 export async function GET() {
   try {
     const items = await prisma.customTimeline.findMany({
-      orderBy: { country: 'asc' },
+      orderBy: { officeId: 'asc' },
     });
     const mapped = items.map((t) => ({
       id: t.id,
-      country: t.country,
+      officeId: t.officeId,
       name: t.name,
       stages: parseStages(t.stages),
       isActive: t.isActive,
@@ -37,9 +37,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const country = typeof body.country === 'string' ? body.country.trim() : '';
-    if (!country) {
-      return NextResponse.json({ error: 'country is required' }, { status: 400 });
+    const officeId = typeof body.officeId === 'number' ? body.officeId : parseInt(body.officeId, 10);
+    if (!officeId || isNaN(officeId)) {
+      return NextResponse.json({ error: 'officeId is required' }, { status: 400 });
     }
     const stages = body.stages;
     if (!Array.isArray(stages) || stages.length === 0) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     const created = await prisma.customTimeline.create({
       data: {
-        country,
+        officeId,
         name: typeof body.name === 'string' ? body.name.trim() || null : null,
         stages,
         isActive: body.isActive !== false,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     });
   } catch (e: unknown) {
     const msg = e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'P2002'
-      ? 'Timeline for this country already exists'
+      ? 'Timeline for this office already exists'
       : 'Internal server error';
     console.error(e);
     return NextResponse.json({ error: msg }, { status: msg.includes('exists') ? 409 : 500 });

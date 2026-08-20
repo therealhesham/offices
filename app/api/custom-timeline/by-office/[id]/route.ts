@@ -9,34 +9,34 @@ function parseStages(raw: unknown): TimelineStage[] {
   return raw as TimelineStage[];
 }
 
-type Params = { params: Promise<{ country: string }> };
+type Params = { params: Promise<{ id: string }> };
 
 /**
- * GET /api/custom-timeline/by-country/[country]
- * يُرجع التايم لاين النشط فقط إن وُجد (country مطابقة للنص المخزَّن).
+ * GET /api/custom-timeline/by-office/[id]
+ * يُرجع التايم لاين النشط فقط إن وُجد (officeId).
  */
 export async function GET(_request: Request, { params }: Params) {
   try {
-    const { country: encoded } = await params;
-    const country = decodeURIComponent(encoded || '').trim();
-    if (!country) {
-      return NextResponse.json({ error: 'country required' }, { status: 400 });
+    const { id: encoded } = await params;
+    const officeId = parseInt(decodeURIComponent(encoded || '').trim(), 10);
+    if (!officeId || isNaN(officeId)) {
+      return NextResponse.json({ error: 'officeId required' }, { status: 400 });
     }
 
     const row = await prisma.customTimeline.findUnique({
-      where: { country },
+      where: { officeId },
     });
 
     if (!row || !row.isActive) {
       return NextResponse.json(
-        { error: 'No active timeline found for this country' },
+        { error: 'No active timeline found for this office' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       id: row.id,
-      country: row.country,
+      officeId: row.officeId,
       name: row.name,
       stages: parseStages(row.stages),
       isActive: row.isActive,
