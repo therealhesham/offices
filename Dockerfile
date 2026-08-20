@@ -38,4 +38,4 @@ USER node
 EXPOSE 3002
 
 # Start the Next.js app
-CMD ["npx", "next", "start"]
+CMD ["npx", "next", "start", "-p", "3002"]
